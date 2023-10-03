@@ -1,12 +1,12 @@
 <template>
-  <transition mode="out-in" name="pageTransition" @changePage="ChangePage">
-    <main-page/>
+  <transition name="pageTransition" @changePage="(num)=>ChangePage(num)">
+    <component :is="activeComponent"/>
   </transition>
 </template>
 
 <style scoped>
 .pageTransition-leave-active {
-  animation: collapse 1s ease;
+  animation: collapse 0.5s ease;
 }
 
 @keyframes collapse {
@@ -15,23 +15,59 @@
     opacity: 1;
   }
   100% {
-    transform: translateY(-100vh);
+    transform: translateY(-10vh);
     opacity: 0;
   }
 }
 
 .pageTransition-enter-active {
-  animation: zoomIn 0.5s ease;
+  animation-name: collapse-reverse;
+  animation-duration: 0.5s;
+  animation-timing-function: ease;
+  animation-delay: 0.5s;
 }
 
 @keyframes zoomIn {
   0% {
-    opacity: 0.5;
-    transform: translateY(20vh);
+    opacity: 0;
+    transform: translateY(10vh);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.pageTransitionReverse-enter-active {
+  animation-name: collapse-reverse;
+  animation-duration: 1s;
+  animation-timing-function: ease;
+  animation-delay: 0.5s;
+}
+
+@keyframes collapse-reverse {
+  0% {
+    transform: translateY(-10vh);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.pageTransitionReverse-leave-active {
+  animation: zoomIn-reverse 0.5s ease;
+}
+
+@keyframes zoomIn-reverse {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10vh);
   }
 }
 
@@ -73,13 +109,22 @@ html, body {
 
 
 <script lang="ts" setup>
-import {shallowRef} from "vue";
+import {ref, shallowRef} from "vue";
 import welcomePage from "./components/welcomePage.vue";
 import mainPage from "./components/mainPage.vue";
 
-const activeComponet = shallowRef(welcomePage);
+const activeComponent = shallowRef(welcomePage);
+const transitionName = ref('');
 
-function ChangePage() {
-  activeComponet.value = mainPage;
+function ChangePage(num: number) {
+  if (num === 1) {
+    console.log("111")
+    transitionName.value = 'pageTransition'
+    activeComponent.value = mainPage;
+  } else if (num === 0) {
+    console.log("000")
+    transitionName.value = 'pageTransitionReverse'
+    activeComponent.value = welcomePage;
+  }
 }
 </script>

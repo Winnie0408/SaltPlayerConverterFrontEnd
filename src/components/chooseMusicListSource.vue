@@ -22,10 +22,14 @@ const options = [
   }
 ]
 
-const emit = defineEmits(["next"]);
+const emit = defineEmits(["next", "changeLogo"]);
 
 function next() {
-  emit("next", value.value);
+  emit("next", value.value, 1);
+}
+
+function changeLogo(sourceName: string) {
+  emit("changeLogo", sourceName);
 }
 
 function setBackgroundColor() {
@@ -63,12 +67,14 @@ function setBackgroundColor() {
     default:
       return;
   }
+  changeLogo(value.value)
   document.documentElement.style.setProperty('--end-color', endColor.value);
   document.documentElement.style.setProperty('--background-end-color', endColor.value);
-  document.body.style.animation = 'fadeIn 0.8s ease'
+  document.body.style.animation = value.value + 'FadeIn 0.8s ease'
 }
 
 function resetBackgroundColor() {
+  changeLogo('')
   const body = document.body;
   const style = window.getComputedStyle(body)
   document.documentElement.style.setProperty('--start-color', style.backgroundColor);

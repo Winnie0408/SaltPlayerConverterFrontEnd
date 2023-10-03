@@ -2,6 +2,7 @@
 import {computed, ref} from 'vue'
 import {genFileId, UploadInstance, UploadProps, UploadRawFile} from "element-plus";
 import axios from "axios";
+import {UploadFilled} from "@element-plus/icons-vue";
 
 const upload = ref<UploadInstance>()
 const handleExceed: UploadProps['onExceed'] = (files) => {
@@ -71,7 +72,7 @@ const getDbName = computed(() => {
 const emit = defineEmits(["next"]);
 
 function next() {
-  emit("next", props.source);
+  emit("next", props.source, 1);
 }
 
 </script>
@@ -96,6 +97,9 @@ function next() {
             action=""
             drag
             style="margin-top: 25px;">
+          <el-icon class="el-icon-upload" style="font-size: 50px;margin-bottom: 10px;color: rgb(128,128,128);">
+            <upload-filled/>
+          </el-icon>
           <div class="el-upload__text" style="text-align: center;font-size: large;">{{ tips }}<em>{{ tips2 }}</em>
           </div>
         </el-upload>
