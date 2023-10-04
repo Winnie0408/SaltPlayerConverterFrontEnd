@@ -112,7 +112,7 @@ function nextStep() {
       <br>
       <div align="center">
         <el-select v-model="value" clearable placeholder="请选择" size="large"
-                   style="margin-top: 50px; width: 20vh;" @change="setBackgroundColor()"
+                   style="margin-top: 25px; width: 20vh;" @change="setBackgroundColor()"
                    @clear="resetBackgroundColor()">
           <el-option
               v-for="item in options"
@@ -121,7 +121,7 @@ function nextStep() {
               :value="item.value"/>
         </el-select>
         <br>
-        <el-button size="large" style="font-size: large; margin-top: 50px; width: 10vh;" type="primary"
+        <el-button size="large" style="font-size: large; margin-top: 25px; width: 10vh;" type="primary"
                    @click="nextStep()">下一步
         </el-button>
       </div>

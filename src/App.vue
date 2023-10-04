@@ -118,11 +118,9 @@ const transitionName = ref('');
 
 function ChangePage(num: number) {
   if (num === 1) {
-    console.log("111")
     transitionName.value = 'pageTransition'
     activeComponent.value = mainPage;
   } else if (num === 0) {
-    console.log("000")
     transitionName.value = 'pageTransitionReverse'
     activeComponent.value = welcomePage;
   }

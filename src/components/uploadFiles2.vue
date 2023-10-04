@@ -8,6 +8,7 @@ const upload = ref<UploadInstance>()
 const handleExceed: UploadProps['onExceed'] = (files) => {
   upload.value!.clearFiles()
   console.log('替换之前上传的文件')
+  success.value = false
   const file = files[0] as UploadRawFile
   file.uid = genFileId()
   upload.value!.handleStart(file)
@@ -103,12 +104,14 @@ function next() {
           <div class="el-upload__text" style="text-align: center;font-size: large;">{{ tips }}<em>{{ tips2 }}</em>
           </div>
         </el-upload>
-        <el-button v-if="!success" id="upload" size="large"
-                   style="font-size: large; margin-top: 50px; width: 10vh;" type="primary" @click="submitUpload">上传
-        </el-button>
-        <el-button v-if="success" id="nextStep" size="large"
-                   style="font-size: large; margin-top: 50px; width: 10vh;" type="primary" @click="next()">下一步
-        </el-button>
+        <transition mode="out-in" name="button-exchange">
+          <el-button v-if="!success" id="upload" key="1" size="large"
+                     style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="submitUpload">上传
+          </el-button>
+          <el-button v-else id="nextStep" key="2" size="large"
+                     style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="next()">下一步
+          </el-button>
+        </transition>
 
       </div>
     </el-col>
@@ -118,5 +121,33 @@ function next() {
 <style scoped>
 body {
   overflow: hidden;
+}
+
+.button-exchange-enter-active {
+  animation-name: fadeIn;
+  animation-duration: 0.25s;
+}
+
+
+.button-exchange-leave-active {
+  animation: fadeOut 0.25s;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 </style>

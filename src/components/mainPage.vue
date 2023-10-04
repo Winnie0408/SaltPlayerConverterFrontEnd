@@ -20,9 +20,12 @@
       </div>
       <el-main class="cover-main">
         <transition :name="transitionName" mode="out-in">
-          <component :is="componentName" :source="source" @changeLogo="(sourceName) => changeLogo(sourceName)"
-                     @next="(msg,num) => next(msg,num)"/>
+          <keep-alive include="chooseMusicListSource">
+            <component :is="componentName" :source="source" @changeLogo="(sourceName) => changeLogo(sourceName)"
+                       @next="(msg,num) => next(msg,num)"/>
+          </keep-alive>
         </transition>
+        <!--                    <component :is="chooseNeededMusicList"/>-->
         <!--            <choose-music-list-source @next="(msg) => next(msg)"/>-->
         <!--                  <upload-files1/>-->
         <!--      <upload-files2 :source="source"/>-->
@@ -281,6 +284,7 @@ import {ref, shallowRef} from "vue";
 import chooseMusicListSource from "./chooseMusicListSource.vue"
 import uploadFiles1 from "./uploadFiles1.vue"
 import uploadFiles2 from "./uploadFiles2.vue"
+import chooseNeededMusicList from "./chooseNeededMusicList.vue"
 import {Back} from "@element-plus/icons-vue";
 
 const componentName = shallowRef(chooseMusicListSource)
@@ -313,7 +317,7 @@ function next(msg: string, num: number) {
       componentName.value = uploadFiles2
       break
     case 3:
-      componentName.value = chooseMusicList
+      componentName.value = chooseNeededMusicList
       break
     case 4:
       componentName.value = previewMusicList

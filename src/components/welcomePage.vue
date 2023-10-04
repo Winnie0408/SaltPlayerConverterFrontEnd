@@ -12,7 +12,7 @@
           <transition appear name="button">
             <div>
               <el-button class="transition-text" size="large"
-                         style="font-size:25px; margin-top: 50px; padding: 20px 30px;"
+                         style="font-size:25px; margin-top: 25px; padding: 20px 30px;"
                          type="primary"
                          @click="changePage()">开始
               </el-button>
