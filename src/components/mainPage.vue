@@ -21,11 +21,13 @@
       <el-main class="cover-main">
         <transition :name="transitionName" mode="out-in">
           <keep-alive include="chooseMusicListSource">
-            <component :is="componentName" :source="source" @changeLogo="(sourceName) => changeLogo(sourceName)"
-                       @next="(msg,num) => next(msg,num)"/>
+            <component :is="componentName" :selectedMusicList="selectedMusicList" :source="source"
+                       @changeLogo="(sourceName) => changeLogo(sourceName)"
+                       @next="(msg,num) => next(msg,num)"
+                       @saveSelectedMusicList="(list: Array<any>) => saveSelection(list)"/>
           </keep-alive>
         </transition>
-        <!--                    <component :is="chooseNeededMusicList"/>-->
+        <!--                                    <component :is="previewMusicList"/>-->
         <!--            <choose-music-list-source @next="(msg) => next(msg)"/>-->
         <!--                  <upload-files1/>-->
         <!--      <upload-files2 :source="source"/>-->
@@ -286,6 +288,7 @@ import uploadFiles1 from "./uploadFiles1.vue"
 import uploadFiles2 from "./uploadFiles2.vue"
 import chooseNeededMusicList from "./chooseNeededMusicList.vue"
 import {Back} from "@element-plus/icons-vue";
+import previewMusicList from "./previewMusicList.vue";
 
 const componentName = shallowRef(chooseMusicListSource)
 
@@ -372,5 +375,11 @@ function back() {
   }
   transitionName.value = 'previousPage'
   next(source.value, -1)
+}
+
+const selectedMusicList = ref([])
+
+function saveSelection(list: Array<any>) {
+  selectedMusicList.value = list;
 }
 </script>

@@ -47,6 +47,7 @@ function saveSelection() {
     return
   }
   selectedRows.value = selectedRowsTemp.value
+  emit("saveSelectedMusicList", selectedRows.value);
   next()
 }
 
@@ -54,46 +55,45 @@ const props = defineProps({
   source: String
 })
 
-const emit = defineEmits(["next"]);
+const emit = defineEmits(["next", "saveSelectedMusicList"]);
 
 function next() {
   emit("next", props.source, 1);
 }
 
+function rowStyle() {
+  return 'cursor: pointer;'
+}
+
 </script>
 
 <template>
-
   <el-row style="margin-top: -10vh">
     <el-col style="text-align: center">
       <el-text style="font-size:6vh;color: white;">请选择您需要转换的歌单</el-text>
       <br>
       <div align="center">
 
-        <div style="width: 70vw;margin-top: 25px;">
+        <div style="width: 55vw;margin-top: 25px;border-radius: 10px;">
           <el-table
               ref="table"
               :data="tableData"
-              border fit max-height="350"
-              row-style="cursor: pointer;background-color: transparent;" style="width: 100%; border-radius: 10px;"
+              :row-style="rowStyle" border fit
+              max-height="350"
+              style="width: 100%; border-radius: 10px;font-size: 16px"
               table-layout="auto"
               @row-click="handleRowClick"
               @selection-change="handleSelectionChange">
-            <el-table-column type="selection" width="50"/>
-            <el-table-column label="序号" type="index" width="55"/>
+            <el-table-column align="center" fixed="left" type="selection" width="50"/>
+            <el-table-column align="center" label="序号" type="index" width="60"/>
             <el-table-column label="歌单名" prop="playListName" show-overflow-tooltip sortable/>
-            <el-table-column label="歌曲数量" prop="songNum" sortable width="110"/>
+            <el-table-column label="歌曲数量" prop="songNum" sortable width="115"/>
           </el-table>
 
         </div>
-        <!--        <transition name="button-exchange" mode="out-in">-->
-        <!--          <el-button v-if="!success" id="upload" size="large" key="1"-->
-        <!--                     style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="submitUpload">上传-->
-        <!--          </el-button>-->
-        <el-button id="nextStep" key="2" size="large"
+        <el-button id="nextStep" size="large"
                    style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="saveSelection">下一步
         </el-button>
-        <!--        </transition>-->
       </div>
     </el-col>
   </el-row>
@@ -101,6 +101,8 @@ function next() {
 </template>
 
 <style scoped>
-
+::v-deep .el-table__body .el-table__row.hover-row td {
+  background-color: rgba(110, 110, 110, 0.20) !important;
+}
 
 </style>
