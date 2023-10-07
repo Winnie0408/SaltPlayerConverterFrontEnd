@@ -29,6 +29,8 @@ const tableSimple = ref(null)
 const tableDetailed = ref(null)
 const tableSimpleData = ref([])
 const tableDetailedData = ref([])
+const dialogVisibleModify = ref([])
+const dialogVisibleDelete = ref([])
 const enableParenthesesRemoval = ref(false)
 const enableArtistNameMatch = ref(true)
 const enableAlbumNameMatch = ref(true)
@@ -40,9 +42,6 @@ function getData() {
   tableDetailed.value = null
   tableSimpleData.value = []
   tableDetailedData.value = []
-  console.log('111' + enableParenthesesRemoval.value)
-  console.log('222' + enableArtistNameMatch.value)
-  console.log('333' + enableAlbumNameMatch.value)
   axios({
     method: 'GET',
     url: '/attemptConvert',
@@ -83,9 +82,32 @@ function getData() {
         autoMatched: backEnd.data[count.value][0][0],
         songId: backEnd.data[count.value][0][1]
       })
+      dialogVisibleModify.value.push(false)
+      dialogVisibleDelete.value.push(false)
     }
+    // unfoldNotMatched()
   }).catch(err => {
     console.log(err)
+  })
+}
+
+function unfoldNotMatched() {
+  tableSimpleData.value.forEach(row => {
+    if (row.autoMatched === 'false') {
+      tableSimple.value.toggleRowExpansion(row)
+    }
+  })
+}
+
+function unfoldAll() {
+  tableSimpleData.value.forEach(row => {
+    tableSimple.value.toggleRowExpansion(row, true)
+  })
+}
+
+function foldAll() {
+  tableSimpleData.value.forEach(row => {
+    tableSimple.value.toggleRowExpansion(row, false)
   })
 }
 
@@ -96,14 +118,69 @@ const toggleRowExpansion = (row) => {
 function rowStyle() {
   return 'cursor: pointer;'
 }
+
+const modifyRow = ref(-1)
+const deleteRow = ref(-1)
+
+const queryInput = ref('')
+
+const querySearchAsync = (queryString, cb) => {
+  axios({
+    method: 'GET',
+    url: '/searchLocalMusic',
+    params: {
+      queryString: queryString
+    }
+  }).then(backEnd => {
+    console.log(backEnd.data)
+    cb(backEnd.data)
+  }).catch(err => {
+    console.log(err)
+  })
+}
+
+const manualSelectMusicId = ref(-1)
+
+const handleSelect = (item) => {
+  manualSelectMusicId.value = item.musicId
+}
+
+function saveManualMatch() {
+  tableDetailedData.value[modifyRow.value].localMusic = queryInput.value.split(' - ')[0]
+  tableDetailedData.value[modifyRow.value].similarity = "手动匹配"
+
+  tableDetailedData.value[modifyRow.value + 1].localMusic = queryInput.value.split(' - ')[1]
+  tableDetailedData.value[modifyRow.value + 1].similarity = "手动匹配"
+
+  tableDetailedData.value[modifyRow.value + 2].localMusic = queryInput.value.split(' - ')[2]
+  tableDetailedData.value[modifyRow.value + 2].similarity = "手动匹配"
+
+  tableSimpleData.value[modifyRow.value / 3].autoMatched = "manual"
+}
+
+const deleteAll = ref(false)
+
+function handleDelete() {
+  tableSimpleData.value.splice(deleteRow.value / 3, 1)
+  tableDetailedData.value.splice(deleteRow.value, 3)
+  if (deleteAll.value) {
+    for (const i = ref(0); i.value < tableSimpleData.value.length; i.value++) {
+      if (tableSimpleData.value[i.value].autoMatched === 'false') {
+        tableSimpleData.value.splice(i.value, 1)
+        tableDetailedData.value.splice(i.value * 3, 3)
+        i.value--
+      }
+    }
+  }
+}
 </script>
 
 <template>
-  <el-row :gutter="15" style="margin-top: -10vh;width: 98%">
-    <el-col :span="8" style="text-align: center">
+  <el-row :gutter="20" style="margin-top: -10vh;width: 98%; align-items: center">
+    <el-col :span="8" style="text-align: center;">
       <!--      <el-text style="font-size:5vh;color: white;">请预览转换结果</el-text>-->
       <!--      <br>-->
-      <div style="width: 100%;border-radius: 10px;background-color: white;">
+      <div style="width: 100%;border-radius: 10px;background-color: white;height: 500px;">
         <div style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;">
           <p style="height: 1px;"></p>
           <el-text style="font-size: 2vh;">当前歌单名：{{ props.selectedMusicList[progress].playListName }}</el-text>
@@ -120,7 +197,7 @@ function rowStyle() {
           <el-slider v-model="similarity" show-input size="large"
                      style="margin-top: 10px; width: 90%"/>
         </div>
-        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
+        <el-row align="middle" justify="center" style="margin-top: 20px" type="flex">
           <el-text style="margin-right: 15px; font-size: 2vh">启用括号去除</el-text>
           <el-switch
               v-model="enableParenthesesRemoval"
@@ -130,7 +207,7 @@ function rowStyle() {
               size="large"
               style="margin-left: 17px"/>
         </el-row>
-        <el-row align="middle" justify="center" type="flex">
+        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
           <el-text style="margin-right: 15px;font-size: 2vh">启用歌手名匹配</el-text>
           <el-switch
               v-model="enableArtistNameMatch"
@@ -139,17 +216,16 @@ function rowStyle() {
               inline-prompt
               size="large"/>
         </el-row>
-        <el-row align="middle" justify="center" type="flex">
+        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
           <el-text style="margin-right: 15px;font-size: 2vh">启用专辑名匹配</el-text>
           <el-switch
               v-model="enableAlbumNameMatch"
               :active-icon="Check"
               :inactive-icon="Close"
-              inactive-text="启用专辑名匹配"
               inline-prompt
               size="large"/>
         </el-row>
-        <el-button size="large" style="font-size: large; margin-top: 15px;margin-bottom: 15px; width: 10vw;"
+        <el-button size="large" style="font-size: large; margin-top: 25px;margin-bottom: 15px; width: 10vw;"
                    type="primary"
                    @click="getData">
           预览结果
@@ -170,14 +246,108 @@ function rowStyle() {
             ref="tableSimple"
             :data="tableSimpleData"
             :row-style="rowStyle"
-            border
-            fit max-height="500" style="width: 100%; border-radius: 10px;font-size: 16px"
+            border fit
+            max-height="500" style="width: 100%; border-radius: 10px;font-size: 16px;"
             table-layout="auto"
             @row-click="toggleRowExpansion">
           <el-table-column type="expand">
             <template #default="props">
               <div style="margin-left: 25px;margin-right: 25px;">
                 <el-text style="font-size: 2vh; font-weight: bold">匹配详情</el-text>
+                <el-button icon="Delete" style="font-size: 1.5vh; float: right;" type="danger"
+                           @click="dialogVisibleDelete[props.$index]=true;deleteAll=false;deleteRow=props.$index*3">放弃
+                </el-button>
+
+                <el-dialog
+                    v-model="dialogVisibleDelete[props.$index]"
+                    align-center
+                    append-to-body
+                    style="border-radius: 10px"
+                    title="确认要放弃匹配这首歌吗？"
+                    width="40%">
+
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
+                  <br>
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌名：{{ tableDetailedData[deleteRow].source }}
+                  </el-text>
+                  <br>
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌手：{{
+                      tableDetailedData[deleteRow + 1].source
+                    }}
+                  </el-text>
+                  <br>
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">专辑：{{
+                      tableDetailedData[deleteRow + 2].source
+                    }}
+                  </el-text>
+                  <br><br>
+
+                  <el-text style="margin-right: 15px;font-size: 2vh">放弃当前歌单所有匹配失败的歌曲</el-text>
+                  <el-switch
+                      v-model="deleteAll"
+                      :active-icon="Check"
+                      :inactive-icon="Close"
+                      inline-prompt
+                      size="large"/>
+
+                  <template #footer>
+                    <span class="dialog-footer">
+                      <el-button @click="dialogVisibleDelete[props.$index] = false">取消</el-button>
+                      <el-button type="primary" @click="handleDelete();dialogVisibleDelete[props.$index] = false;">
+                        确定
+                      </el-button>
+                    </span>
+                  </template>
+
+                </el-dialog>
+
+                <el-button icon="Edit" style="font-size: 1.5vh; float: right; margin-right: 5px" type="primary"
+                           @click="dialogVisibleModify[props.$index] = true; modifyRow = props.$index * 3; manualSelectMusicId = -1; queryInput=''">
+                  修改
+                </el-button>
+                <el-dialog
+                    v-model="dialogVisibleModify[props.$index]"
+                    align-center
+                    append-to-body
+                    style="border-radius: 10px"
+                    title="修改匹配结果"
+                    width="40%">
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
+                  <br>
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌名：{{ tableDetailedData[modifyRow].source }}
+                  </el-text>
+                  <br>
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌手：{{
+                      tableDetailedData[modifyRow + 1].source
+                    }}
+                  </el-text>
+                  <br>
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">专辑：{{
+                      tableDetailedData[modifyRow + 2].source
+                    }}
+                  </el-text>
+                  <br>
+
+                  <el-autocomplete
+                      v-model="queryInput"
+                      :fetch-suggestions="querySearchAsync"
+                      :trigger-on-focus=false clearable
+                      debounce=500
+                      placeholder="搜索您的曲库..."
+                      style="width: 60%; font-size: 30px"
+                      @select="handleSelect">
+                  </el-autocomplete>
+
+                  <template #footer>
+                    <span class="dialog-footer">
+                      <el-button @click="dialogVisibleModify[props.$index] = false">取消</el-button>
+                      <el-button type="primary" @click="saveManualMatch(); dialogVisibleModify[props.$index] = false;">
+                        确定
+                      </el-button>
+                    </span>
+                  </template>
+
+                </el-dialog>
                 <p></p>
                 <el-table
                     ref="tableDetailed"
@@ -211,12 +381,27 @@ function rowStyle() {
               <!--              </el-icon>-->
               <el-tag v-if="scope.row.autoMatched === 'true'" style="font-size: 17px;width: 40px;" type="success">是
               </el-tag>
-              <el-tag v-else style="font-size: 17px; width: 40px;" type="danger">否</el-tag>
+              <el-tag v-else-if="scope.row.autoMatched === 'false'" style="font-size: 17px; width: 40px;" type="danger">
+                否
+              </el-tag>
+              <el-tag v-else-if="scope.row.autoMatched === 'manual'" style="font-size: 17px; width: 90px;">手动匹配
+              </el-tag>
             </template>
           </el-table-column>
           <el-table-column v-if="false" label="歌曲ID" prop="songId"></el-table-column>
         </el-table>
-
+        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
+                   type="primary"
+                   @click="unfoldAll">展开所有项
+        </el-button>
+        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
+                   type="primary"
+                   @click="foldAll">收起所有项
+        </el-button>
+        |
+        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px" type="primary"
+                   @click="unfoldNotMatched">展开所有匹配失败的项
+        </el-button>
       </div>
     </el-col>
   </el-row>
