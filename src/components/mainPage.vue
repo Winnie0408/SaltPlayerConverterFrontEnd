@@ -37,17 +37,16 @@
     <transition name="icon-fade">
       <div v-if="logoName==='CloudMusic'" key="1"
            :style="{background: 'url('+logoPath+') no-repeat center center'}" class="source-icon"
-           style="background-size: cover;"></div>
+           style="background-size: cover; z-index: 0"></div>
       <div v-else-if="logoName==='QQMusic'" key="2"
            :style="{background: 'url('+logoPath+') no-repeat center center'}" class="source-icon"
-           style="background-size: cover;"></div>
+           style="background-size: cover; z-index: 0"></div>
       <div v-else-if="logoName==='KugouMusic'" key="3"
            :style="{background: 'url('+logoPath+') no-repeat center center'}" class="source-icon"
-           style="background-size: cover;"></div>
+           style="background-size: cover; z-index: 0"></div>
       <div v-else-if="logoName==='KuwoMusic'" key="4"
            :style="{background: 'url('+logoPath+') no-repeat center center'}" class="source-icon"
-           style="background-size: cover;"></div>
-
+           style="background-size: cover; z-index: 0"></div>
     </transition>
   </div>
 </template>

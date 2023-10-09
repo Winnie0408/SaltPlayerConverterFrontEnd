@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 
-import {onMounted, ref} from "vue";
+import {nextTick, onMounted, ref} from "vue";
 import {Check, Close} from '@element-plus/icons-vue'
 import axios from "axios";
 
@@ -145,22 +145,25 @@ const handleSelect = (item) => {
   manualSelectMusicId.value = item.musicId
 }
 
-function saveManualMatch() {
-  tableDetailedData.value[modifyRow.value].localMusic = queryInput.value.split(' - ')[0]
-  tableDetailedData.value[modifyRow.value].similarity = "手动匹配"
+function saveManualMatch(rowIndex: number) {
+  if (queryInput.value.includes(' - ')) {
+    tableDetailedData.value[modifyRow.value].localMusic = queryInput.value.split(' - ')[0]
+    tableDetailedData.value[modifyRow.value].similarity = "手动匹配"
 
-  tableDetailedData.value[modifyRow.value + 1].localMusic = queryInput.value.split(' - ')[1]
-  tableDetailedData.value[modifyRow.value + 1].similarity = "手动匹配"
+    tableDetailedData.value[modifyRow.value + 1].localMusic = queryInput.value.split(' - ')[1]
+    tableDetailedData.value[modifyRow.value + 1].similarity = "手动匹配"
 
-  tableDetailedData.value[modifyRow.value + 2].localMusic = queryInput.value.split(' - ')[2]
-  tableDetailedData.value[modifyRow.value + 2].similarity = "手动匹配"
+    tableDetailedData.value[modifyRow.value + 2].localMusic = queryInput.value.split(' - ')[2]
+    tableDetailedData.value[modifyRow.value + 2].similarity = "手动匹配"
 
-  tableSimpleData.value[modifyRow.value / 3].autoMatched = "manual"
+    tableSimpleData.value[modifyRow.value / 3].autoMatched = "manual"
+    dialogVisibleModify.value[rowIndex] = false;
+  }
 }
 
 const deleteAll = ref(false)
 
-function handleDelete() {
+function handleDelete(rowIndex: number) {
   tableSimpleData.value.splice(deleteRow.value / 3, 1)
   tableDetailedData.value.splice(deleteRow.value, 3)
   if (deleteAll.value) {
@@ -172,6 +175,21 @@ function handleDelete() {
       }
     }
   }
+  dialogVisibleDelete.value[rowIndex] = false;
+}
+
+function jumpToNextFailItem() {
+  tableSimple.value.clearSort()
+  for (const i = ref(0); i.value < tableSimple.value.data.length; i.value++) {
+    if (tableSimple.value.data[i.value].autoMatched === 'false') {
+      tableSimple.value.toggleRowExpansion(tableSimple.value.data[i.value], true)
+      nextTick(() => {
+        // tableSimple.value.setScrollTop(i.value * tableSimple.value.$el.querySelector('tbody tr').clientHeight)
+        tableSimple.value.scrollTo({top: i.value * tableSimple.value.$el.querySelector('tbody tr').clientHeight, behavior: 'smooth'})
+      })
+      return
+    }
+  }
 }
 </script>
 
@@ -180,7 +198,7 @@ function handleDelete() {
     <el-col :span="8" style="text-align: center;">
       <!--      <el-text style="font-size:5vh;color: white;">请预览转换结果</el-text>-->
       <!--      <br>-->
-      <div style="width: 100%;border-radius: 10px;background-color: white;height: 500px;">
+      <div style="width: 100%;border-radius: 10px;background-color: white;height: 450px;">
         <div style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;">
           <p style="height: 1px;"></p>
           <el-text style="font-size: 2vh;">当前歌单名：{{ props.selectedMusicList[progress].playListName }}</el-text>
@@ -236,8 +254,8 @@ function handleDelete() {
       <!--                   style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="saveSelection">下一步-->
       <!--        </el-button>-->
     </el-col>
-    <el-col :span="16" style="text-align: center">
-      <div align="center" style="width: 100%;border-radius: 10px;background-color: white;margin-top: 15px">
+    <el-col :span="16" style="text-align: center;z-index: 1;">
+      <div align="center" style="width: 100%;border-radius: 10px;background-color: white;margin-top: 50px">
         <div style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;">
           <el-text style="font-size: 3vh;">转 换 结 果</el-text>
         </div>
@@ -247,19 +265,20 @@ function handleDelete() {
             :data="tableSimpleData"
             :row-style="rowStyle"
             border fit
-            max-height="500" style="width: 100%; border-radius: 10px;font-size: 16px;"
+            max-height="450" style="width: 100%; border-radius: 10px;font-size: 16px;"
             table-layout="auto"
             @row-click="toggleRowExpansion">
           <el-table-column type="expand">
             <template #default="props">
               <div style="margin-left: 25px;margin-right: 25px;">
                 <el-text style="font-size: 2vh; font-weight: bold">匹配详情</el-text>
-                <el-button icon="Delete" style="font-size: 1.5vh; float: right;" type="danger"
-                           @click="dialogVisibleDelete[props.$index]=true;deleteAll=false;deleteRow=props.$index*3">放弃
+                <el-button icon="Delete" style="font-size: 1.8vh; float: right;" type="danger"
+                           @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]=true;deleteAll=false;deleteRow=tableSimpleData.indexOf(props.row)*3">
+                  放弃
                 </el-button>
 
                 <el-dialog
-                    v-model="dialogVisibleDelete[props.$index]"
+                    v-model="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]"
                     align-center
                     append-to-body
                     style="border-radius: 10px"
@@ -292,8 +311,9 @@ function handleDelete() {
 
                   <template #footer>
                     <span class="dialog-footer">
-                      <el-button @click="dialogVisibleDelete[props.$index] = false">取消</el-button>
-                      <el-button type="primary" @click="handleDelete();dialogVisibleDelete[props.$index] = false;">
+                      <el-button
+                          @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)] = false">取消</el-button>
+                      <el-button type="primary" @click="handleDelete(tableSimpleData.indexOf(props.row));">
                         确定
                       </el-button>
                     </span>
@@ -301,12 +321,12 @@ function handleDelete() {
 
                 </el-dialog>
 
-                <el-button icon="Edit" style="font-size: 1.5vh; float: right; margin-right: 5px" type="primary"
-                           @click="dialogVisibleModify[props.$index] = true; modifyRow = props.$index * 3; manualSelectMusicId = -1; queryInput=''">
+                <el-button icon="Edit" style="font-size: 1.8vh; float: right; margin-right: 5px" type="primary"
+                           @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = true; modifyRow = tableSimpleData.indexOf(props.row) * 3; manualSelectMusicId = -1; queryInput=''">
                   修改
                 </el-button>
                 <el-dialog
-                    v-model="dialogVisibleModify[props.$index]"
+                    v-model="dialogVisibleModify[tableSimpleData.indexOf(props.row)]"
                     align-center
                     append-to-body
                     style="border-radius: 10px"
@@ -314,25 +334,31 @@ function handleDelete() {
                     width="40%">
                   <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
                   <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌名：{{ tableDetailedData[modifyRow].source }}
+                  <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
+                           @click="queryInput+=tableDetailedData[modifyRow].source">
+                    歌名：{{ tableDetailedData[modifyRow].source }}
                   </el-text>
                   <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌手：{{
+                  <el-text style="font-size: 1.2vw;margin-top: 15px;cursor:pointer;"
+                           @click="queryInput+=tableDetailedData[modifyRow+1].source">歌手：{{
                       tableDetailedData[modifyRow + 1].source
                     }}
                   </el-text>
                   <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">专辑：{{
+                  <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
+                           @click="queryInput+=tableDetailedData[modifyRow+2].source">专辑：{{
                       tableDetailedData[modifyRow + 2].source
                     }}
                   </el-text>
                   <br>
-
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">点击文字可直接将其输入
+                  </el-text>
+                  <br>
                   <el-autocomplete
                       v-model="queryInput"
+                      :debounce=500
                       :fetch-suggestions="querySearchAsync"
-                      :trigger-on-focus=false clearable
-                      debounce=500
+                      clearable
                       placeholder="搜索您的曲库..."
                       style="width: 60%; font-size: 30px"
                       @select="handleSelect">
@@ -340,8 +366,9 @@ function handleDelete() {
 
                   <template #footer>
                     <span class="dialog-footer">
-                      <el-button @click="dialogVisibleModify[props.$index] = false">取消</el-button>
-                      <el-button type="primary" @click="saveManualMatch(); dialogVisibleModify[props.$index] = false;">
+                      <el-button
+                          @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = false">取消</el-button>
+                      <el-button type="primary" @click="saveManualMatch(tableSimpleData.indexOf(props.row));">
                         确定
                       </el-button>
                     </span>
@@ -351,7 +378,7 @@ function handleDelete() {
                 <p></p>
                 <el-table
                     ref="tableDetailed"
-                    :data="tableDetailedData.slice(props.$index * 3, props.$index * 3 + 3)"
+                    :data="tableDetailedData.slice(tableSimpleData.indexOf(props.row) * 3, tableSimpleData.indexOf(props.row) * 3 + 3)"
                     border
                     fit max-height="500" style="width: 100%; font-size: 16px;margin-bottom: 15px"
                     table-layout="auto">
@@ -391,16 +418,20 @@ function handleDelete() {
           <el-table-column v-if="false" label="歌曲ID" prop="songId"></el-table-column>
         </el-table>
         <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
-                   type="primary"
+                   type="info"
                    @click="unfoldAll">展开所有项
         </el-button>
         <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
-                   type="primary"
+                   type="info"
                    @click="foldAll">收起所有项
+        </el-button>
+        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
+                   type="info"
+                   @click="unfoldNotMatched">展开所有匹配失败的项
         </el-button>
         |
         <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px" type="primary"
-                   @click="unfoldNotMatched">展开所有匹配失败的项
+                   @click="jumpToNextFailItem">跳转并展开下一匹配失败的项
         </el-button>
       </div>
     </el-col>
