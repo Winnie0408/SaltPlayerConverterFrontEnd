@@ -288,6 +288,7 @@ import uploadFiles2 from "./uploadFiles2.vue"
 import chooseNeededMusicList from "./chooseNeededMusicList.vue"
 import {Back} from "@element-plus/icons-vue";
 import previewMusicList from "./previewMusicList.vue";
+import downloadMusicList from "./downloadMusicList.vue";
 
 const componentName = shallowRef(chooseMusicListSource)
 

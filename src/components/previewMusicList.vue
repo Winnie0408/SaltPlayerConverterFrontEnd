@@ -11,7 +11,6 @@ const props = defineProps({
 
 const emit = defineEmits(["next"]);
 
-
 function next() {
   emit("next", props.source, 1);
 }
@@ -19,6 +18,12 @@ function next() {
 const selectedMusicList = ref([])
 const selectedMusicListCount = ref(0)
 const progress = ref(0)
+
+const enableParenthesesRemoval = ref(false)
+const enableArtistNameMatch = ref(true)
+const enableAlbumNameMatch = ref(true)
+const similarity = ref(85)
+const sourceChn = ref('歌单来源')
 
 onMounted(() => {
   selectedMusicList.value = props.selectedMusicList
@@ -31,13 +36,13 @@ const tableSimpleData = ref([])
 const tableDetailedData = ref([])
 const dialogVisibleModify = ref([])
 const dialogVisibleDelete = ref([])
-const enableParenthesesRemoval = ref(false)
-const enableArtistNameMatch = ref(true)
-const enableAlbumNameMatch = ref(true)
-const similarity = ref(85)
-const sourceChn = ref('歌单来源')
+const dialogVisibleSave = ref(false)
+const dialogVisibleSkip = ref(false)
+const dialogVisibleFinish = ref(false)
+const successNum = ref(0)
 
 function getData() {
+  successNum.value = 0
   tableSimple.value = null
   tableDetailed.value = null
   tableSimpleData.value = []
@@ -84,6 +89,9 @@ function getData() {
       })
       dialogVisibleModify.value.push(false)
       dialogVisibleDelete.value.push(false)
+      if (backEnd.data[count.value][0][0] === 'true') {
+        successNum.value++
+      }
     }
     // unfoldNotMatched()
   }).catch(err => {
@@ -157,6 +165,9 @@ function saveManualMatch(rowIndex: number) {
     tableDetailedData.value[modifyRow.value + 2].similarity = "手动匹配"
 
     tableSimpleData.value[modifyRow.value / 3].autoMatched = "manual"
+    tableSimpleData.value[modifyRow.value / 3].songId = manualSelectMusicId.value
+
+    successNum.value++
     dialogVisibleModify.value[rowIndex] = false;
   }
 }
@@ -185,20 +196,84 @@ function jumpToNextFailItem() {
       tableSimple.value.toggleRowExpansion(tableSimple.value.data[i.value], true)
       nextTick(() => {
         // tableSimple.value.setScrollTop(i.value * tableSimple.value.$el.querySelector('tbody tr').clientHeight)
-        tableSimple.value.scrollTo({top: i.value * tableSimple.value.$el.querySelector('tbody tr').clientHeight, behavior: 'smooth'})
+        tableSimple.value.scrollTo({
+          top: i.value * tableSimple.value.$el.querySelector('tbody tr').clientHeight,
+          behavior: 'smooth'
+        })
       })
       return
     }
   }
 }
+
+function saveCurrentMusicList() {
+  if (tableSimpleData.value.length === 0) {
+    dialogVisibleSave.value = false
+    console.log("歌单数据未加载")
+    return
+  }
+  const result = {};
+  tableSimpleData.value.forEach((row) => {
+    result[row.index] = row.songId;
+  });
+  axios({
+    method: 'POST',
+    url: '/saveCurrentMusicList',
+    data: {
+      playlistId: selectedMusicList.value[progress.value].playListId,
+      result: result
+    }
+  }).then(backEnd => {
+    console.log(backEnd)
+    if (backEnd.status === 200) {
+      dialogVisibleSave.value = false
+      console.log("保存成功")
+      if (progress.value === selectedMusicListCount.value - 1) {
+        dialogVisibleFinish.value = true;
+        return
+      }
+      successNum.value = 0
+      tableSimple.value = null
+      tableDetailed.value = null
+      tableSimpleData.value = []
+      tableDetailedData.value = []
+      dialogVisibleModify.value = []
+      dialogVisibleDelete.value = []
+      dialogVisibleSkip.value = false
+      progress.value++
+    }
+  }).catch(err => {
+    console.log(err)
+  })
+}
+
+function skipCurrentMusicList() {
+  dialogVisibleSkip.value = false
+  console.log("已放弃当前歌单的匹配")
+  successNum.value = 0
+  tableSimple.value = null
+  tableDetailed.value = null
+  tableSimpleData.value = []
+  tableDetailedData.value = []
+  dialogVisibleModify.value = []
+  dialogVisibleDelete.value = []
+  dialogVisibleSave.value = false
+  progress.value++
+}
+// TODO:
+// 显示当前正在操作的是第几个歌单，共多少个歌单
+// 在子表格中增加“相同”按钮
+// 移动端适配
+// 将console.log替换为气泡、消息提示
+// 发送统计数据的开关
 </script>
 
 <template>
-  <el-row :gutter="20" style="margin-top: -10vh;width: 98%; align-items: center">
-    <el-col :span="8" style="text-align: center;">
+  <el-row :gutter="50" style="margin-top: -10vh;width: 98%; align-items: center">
+    <el-col :span="6" style="text-align: center;">
       <!--      <el-text style="font-size:5vh;color: white;">请预览转换结果</el-text>-->
       <!--      <br>-->
-      <div style="width: 100%;border-radius: 10px;background-color: white;height: 450px;">
+      <div style="width: 100%;border-radius: 10px;background-color: white;height: 100%;">
         <div style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;">
           <p style="height: 1px;"></p>
           <el-text style="font-size: 2vh;">当前歌单名：{{ props.selectedMusicList[progress].playListName }}</el-text>
@@ -207,12 +282,12 @@ function jumpToNextFailItem() {
           </el-text>
           <p style="height: 1px;"></p>
         </div>
-        <el-text style="font-size: 2.8vh;">转 换 配 置</el-text>
+        <el-text style="font-size: 2.8vh;">转 换 控 制</el-text>
         <p></p>
         <div align="center">
-          <el-text style="font-size: 2vh;margin-top: 10px;">相似度阈值</el-text>
+          <el-text style="font-size: 2vh;margin-top: 10px;">相似度阈值：{{ similarity }}%</el-text>
           <br>
-          <el-slider v-model="similarity" show-input size="large"
+          <el-slider v-model="similarity" :show-tooltip="false"
                      style="margin-top: 10px; width: 90%"/>
         </div>
         <el-row align="middle" justify="center" style="margin-top: 20px" type="flex">
@@ -243,21 +318,99 @@ function jumpToNextFailItem() {
               inline-prompt
               size="large"/>
         </el-row>
+
         <el-button size="large" style="font-size: large; margin-top: 25px;margin-bottom: 15px; width: 10vw;"
                    type="primary"
                    @click="getData">
           预览结果
         </el-button>
+        <br>
+        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 8vw;"
+                   type="success"
+                   @click="dialogVisibleSave=true">
+          保存当前歌单
+        </el-button>
+        <el-dialog
+            v-model="dialogVisibleSave"
+            align-center
+            append-to-body
+            style="border-radius: 10px"
+            title="请确认"
+            width="40%">
+          <el-text style="font-size: 1.2vw;margin-top: 15px">按照表格保存当前歌单的匹配结果，并进入下一个歌单？</el-text>
+          <br>
+          <template #footer>
+            <span class="dialog-footer">
+              <el-button
+                  @click="dialogVisibleSave = false">取消
+              </el-button>
+              <el-button type="success" @click="saveCurrentMusicList">
+                保存</el-button>
+            </span>
+          </template>
+
+        </el-dialog>
+        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 8vw;"
+                   type="danger"
+                   @click="dialogVisibleSkip=true">
+          放弃当前歌单
+        </el-button>
+        <el-dialog
+            v-model="dialogVisibleSkip"
+            align-center
+            append-to-body
+            style="border-radius: 10px"
+            title="请确认"
+            width="40%">
+          <el-text style="font-size: 1.2vw;margin-top: 15px">确认要放弃当前歌单的匹配，并进入下一个歌单？</el-text>
+          <br>
+          <template #footer>
+            <span class="dialog-footer">
+              <el-button
+                  @click="dialogVisibleSkip = false">取消
+              </el-button>
+              <el-button type="danger" @click="skipCurrentMusicList">
+                放弃</el-button>
+            </span>
+          </template>
+        </el-dialog>
+
+        <el-dialog
+            v-model="dialogVisibleFinish"
+            align-center
+            append-to-body
+            style="border-radius: 10px"
+            title="恭喜！"
+            width="40%">
+          <el-text style="font-size: 1.2vw;margin-top: 15px">您已经完成了所有歌单的匹配操作！胜利就在眼前！<br>点击确定进入下载页面
+          </el-text>
+          <br>
+          <template #footer>
+            <span class="dialog-footer">
+              <el-button
+                  @click="dialogVisibleFinish = false">取消
+              </el-button>
+              <el-button type="success" @click="next">
+                确定</el-button>
+            </span>
+          </template>
+        </el-dialog>
+
       </div>
 
       <!--        <el-button id="nextStep" key="2" size="large"-->
       <!--                   style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="saveSelection">下一步-->
       <!--        </el-button>-->
     </el-col>
-    <el-col :span="16" style="text-align: center;z-index: 1;">
+    <el-col :span="18" style="text-align: center;z-index: 1;">
       <div align="center" style="width: 100%;border-radius: 10px;background-color: white;margin-top: 50px">
-        <div style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;">
+        <div
+            style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;padding-top: 5px;padding-bottom: 5px">
           <el-text style="font-size: 3vh;">转 换 结 果</el-text>
+          <br>
+          <el-text v-if="tableSimpleData.length!=0" style="font-size: 2vh;">共 {{ tableSimpleData.length }} 首，成功(自动+手动)
+            {{ successNum }} 首，失败 {{ tableSimpleData.length - successNum }} 首
+          </el-text>
         </div>
 
         <el-table
@@ -313,7 +466,7 @@ function jumpToNextFailItem() {
                     <span class="dialog-footer">
                       <el-button
                           @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)] = false">取消</el-button>
-                      <el-button type="primary" @click="handleDelete(tableSimpleData.indexOf(props.row));">
+                      <el-button type="danger" @click="handleDelete(tableSimpleData.indexOf(props.row));">
                         确定
                       </el-button>
                     </span>
@@ -351,7 +504,7 @@ function jumpToNextFailItem() {
                     }}
                   </el-text>
                   <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">点击文字可直接将其输入
+                  <el-text style="font-size: 1.2vw;margin-top: 15px">Tips：点击文字可直接将其填入搜索框
                   </el-text>
                   <br>
                   <el-autocomplete
@@ -367,7 +520,8 @@ function jumpToNextFailItem() {
                   <template #footer>
                     <span class="dialog-footer">
                       <el-button
-                          @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = false">取消</el-button>
+                          @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = false">取消
+                      </el-button>
                       <el-button type="primary" @click="saveManualMatch(tableSimpleData.indexOf(props.row));">
                         确定
                       </el-button>
