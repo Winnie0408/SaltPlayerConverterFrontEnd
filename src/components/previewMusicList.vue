@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-
+// import {ElCollapseTransition} from 'element-plus'
 import {nextTick, onMounted, ref} from "vue";
 import {Check, Close} from '@element-plus/icons-vue'
 import axios from "axios";
+import {ElLoading, ElNotification} from "element-plus";
 
 const props = defineProps({
   source: String,
@@ -36,17 +37,24 @@ const tableSimpleData = ref([])
 const tableDetailedData = ref([])
 const dialogVisibleModify = ref([])
 const dialogVisibleDelete = ref([])
+// const collapseTransition = ref([])
 const dialogVisibleSave = ref(false)
 const dialogVisibleSkip = ref(false)
 const dialogVisibleFinish = ref(false)
 const successNum = ref(0)
+const modeSaved = ref('')
 
-function getData() {
+const loading = ref(false)
+
+function getConvertResult() {
+  loading.value = true
   successNum.value = 0
   tableSimple.value = null
   tableDetailed.value = null
   tableSimpleData.value = []
   tableDetailedData.value = []
+  modeSaved.value = mode.value
+  const modeF = mode.value === '分离匹配' ? 'true' : 'false'
   axios({
     method: 'GET',
     url: '/attemptConvert',
@@ -55,10 +63,10 @@ function getData() {
       enableParenthesesRemovalF: enableParenthesesRemoval.value,
       enableArtistNameMatchF: enableArtistNameMatch.value,
       enableAlbumNameMatchF: enableAlbumNameMatch.value,
-      playlistId: selectedMusicList.value[progress.value].playListId
+      playlistId: selectedMusicList.value[progress.value].playListId,
+      modeF: modeF
     }
   }).then(backEnd => {
-    console.log(backEnd.data)
     sourceChn.value = backEnd.data.sourceChn
     for (const count = ref(0); count.value < backEnd.data.total; count.value++) {
       tableDetailedData.value.push({
@@ -89,13 +97,16 @@ function getData() {
       })
       dialogVisibleModify.value.push(false)
       dialogVisibleDelete.value.push(false)
+      // collapseTransition.value.push(false)
       if (backEnd.data[count.value][0][0] === 'true') {
         successNum.value++
       }
     }
+    loading.value = false
     // unfoldNotMatched()
   }).catch(err => {
-    console.log(err)
+    makeNoti('转换结果获取失败，请重试', '错误详情：' + err, 'error')
+    loading.value = false
   })
 }
 
@@ -120,8 +131,21 @@ function foldAll() {
 }
 
 const toggleRowExpansion = (row) => {
-  tableSimple.value.toggleRowExpansion(row);
+  const delay = ref(0)
+  // if (collapseTransition.value[row.index] === true)
+  //   delay.value = 300;
+  // collapseTransition.value[row.index] = false;
+  setTimeout(() => {
+    tableSimple.value.toggleRowExpansion(row);
+  }, delay.value)
+  // tableSimple.value.toggleRowExpansion(row);
 }
+
+// const showRowTransition = (row) => {
+//   nextTick(() => {
+//     collapseTransition.value[row.index] = true;
+//   })
+// }
 
 function rowStyle() {
   return 'cursor: pointer;'
@@ -129,7 +153,6 @@ function rowStyle() {
 
 const modifyRow = ref(-1)
 const deleteRow = ref(-1)
-
 const queryInput = ref('')
 
 const querySearchAsync = (queryString, cb) => {
@@ -140,10 +163,9 @@ const querySearchAsync = (queryString, cb) => {
       queryString: queryString
     }
   }).then(backEnd => {
-    console.log(backEnd.data)
     cb(backEnd.data)
   }).catch(err => {
-    console.log(err)
+    makeNoti('搜索失败，请重试', '错误详情：' + err, 'error')
   })
 }
 
@@ -169,6 +191,9 @@ function saveManualMatch(rowIndex: number) {
 
     successNum.value++
     dialogVisibleModify.value[rowIndex] = false;
+    tableSimple.value.toggleRowExpansion(tableSimpleData.value[rowIndex], false)
+    makeNoti('保存成功', '', 'success')
+    jumpToNextFailItem(200, rowIndex)
   }
 }
 
@@ -177,6 +202,7 @@ const deleteAll = ref(false)
 function handleDelete(rowIndex: number) {
   tableSimpleData.value.splice(deleteRow.value / 3, 1)
   tableDetailedData.value.splice(deleteRow.value, 3)
+  makeNoti('删除成功', '', 'success')
   if (deleteAll.value) {
     for (const i = ref(0); i.value < tableSimpleData.value.length; i.value++) {
       if (tableSimpleData.value[i.value].autoMatched === 'false') {
@@ -185,33 +211,52 @@ function handleDelete(rowIndex: number) {
         i.value--
       }
     }
+    makeNoti('已删除该歌单所有匹配失败的歌曲', '', 'success')
   }
   dialogVisibleDelete.value[rowIndex] = false;
+  tableSimple.value.toggleRowExpansion(tableSimpleData.value[rowIndex], false)
+  jumpToNextFailItem(200, rowIndex)
 }
 
-function jumpToNextFailItem() {
-  tableSimple.value.clearSort()
-  for (const i = ref(0); i.value < tableSimple.value.data.length; i.value++) {
-    if (tableSimple.value.data[i.value].autoMatched === 'false') {
-      tableSimple.value.toggleRowExpansion(tableSimple.value.data[i.value], true)
-      nextTick(() => {
-        // tableSimple.value.setScrollTop(i.value * tableSimple.value.$el.querySelector('tbody tr').clientHeight)
-        tableSimple.value.scrollTo({
-          top: i.value * tableSimple.value.$el.querySelector('tbody tr').clientHeight,
-          behavior: 'smooth'
+function jumpToNextFailItem(delay: number = 0, rowIndex: number = 0) {
+  setTimeout(() => {
+    tableSimple.value.clearSort()
+    for (const i = ref(rowIndex); i.value < tableSimple.value.data.length; i.value++) {
+      if (tableSimple.value.data[i.value].autoMatched === 'false') {
+        tableSimple.value.setCurrentRow(tableSimple.value.data[i.value])
+        tableSimple.value.toggleRowExpansion(tableSimple.value.data[i.value], true)
+        // nextTick(()=>{
+        //   collapseTransition.value[i.value] = true;
+        // })
+        nextTick(() => {
+          tableSimple.value.scrollTo({
+            top: (i.value - 1) * tableSimple.value.$el.querySelector('tbody tr').clientHeight,
+            behavior: 'smooth'
+          })
         })
-      })
-      return
+        return
+      }
     }
-  }
+  }, delay)
+}
+
+const loading = ref(null)
+
+const fullscreenLoading = () => {
+  loading.value = ElLoading.service({
+    lock: true,
+    text: '保存中...',
+    background: 'rgba(0,0,0,0.7)',
+  })
 }
 
 function saveCurrentMusicList() {
   if (tableSimpleData.value.length === 0) {
     dialogVisibleSave.value = false
-    console.log("歌单数据未加载")
+    makeNoti('歌单数据未加载', '请先点击 预览结果 按钮', 'error')
     return
   }
+  fullscreenLoading()
   const result = {};
   tableSimpleData.value.forEach((row) => {
     result[row.index] = row.songId;
@@ -224,32 +269,31 @@ function saveCurrentMusicList() {
       result: result
     }
   }).then(backEnd => {
-    console.log(backEnd)
-    if (backEnd.status === 200) {
-      dialogVisibleSave.value = false
-      console.log("保存成功")
-      if (progress.value === selectedMusicListCount.value - 1) {
-        dialogVisibleFinish.value = true;
-        return
-      }
-      successNum.value = 0
-      tableSimple.value = null
-      tableDetailed.value = null
-      tableSimpleData.value = []
-      tableDetailedData.value = []
-      dialogVisibleModify.value = []
-      dialogVisibleDelete.value = []
-      dialogVisibleSkip.value = false
-      progress.value++
+    dialogVisibleSave.value = false
+    makeNoti('歌单保存成功', '', 'success')
+    if (progress.value === selectedMusicListCount.value - 1) {
+      dialogVisibleFinish.value = true;
+      return
     }
+    successNum.value = 0
+    tableSimple.value = null
+    tableDetailed.value = null
+    tableSimpleData.value = []
+    tableDetailedData.value = []
+    dialogVisibleModify.value = []
+    dialogVisibleDelete.value = []
+    dialogVisibleSkip.value = false
+    progress.value++
+    loading.value.close()
   }).catch(err => {
-    console.log(err)
+    makeNoti('保存失败，请重试', '错误详情：' + err, 'error')
+    loading.value.close()
   })
 }
 
 function skipCurrentMusicList() {
   dialogVisibleSkip.value = false
-  console.log("已放弃当前歌单的匹配")
+  makeNoti('已放弃当前歌单的匹配', '', 'info')
   successNum.value = 0
   tableSimple.value = null
   tableDetailed.value = null
@@ -260,22 +304,66 @@ function skipCurrentMusicList() {
   dialogVisibleSave.value = false
   progress.value++
 }
-// TODO:
-// 显示当前正在操作的是第几个歌单，共多少个歌单
-// 在子表格中增加“相同”按钮
+
+function handleSame(props) {
+  // collapseTransition.value[tableSimpleData.value.indexOf(props.row)] = false;
+  successNum.value++;
+  // setTimeout(() => {
+  props.row.autoMatched = 'manual';
+  // }, 300)
+  tableSimple.value.toggleRowExpansion(tableSimpleData.value[props.$index], false)
+  jumpToNextFailItem(300, props.$index)
+  makeNoti('保存成功', '', 'success')
+}
+
+const mode = ref('分离匹配')
+
+function spanMethod({row, column, rowIndex, columnIndex}) {
+  if (modeSaved.value === '分离匹配')
+    return;
+  if (columnIndex === 3) {
+    if (rowIndex === 0)
+      return {
+        rowspan: 3,
+        colspan: 1
+      };
+    else {
+      return {
+        rowspan: 0,
+        colspan: 0
+      };
+    }
+  }
+}
+
+const makeNoti = (title: string, message: string, type: string) => {
+  ElNotification({
+    title: title,
+    message: message,
+    type: type + '',
+    customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
+    duration: 5000,
+  })
+}
+
+// TODO
+// 表格展开收起动画
 // 移动端适配
-// 将console.log替换为气泡、消息提示
 // 发送统计数据的开关
+// Bug: 表格顶端汇总，可能出现：失败-1首
+// Notification错误，展示后端返回的详细错误信息
 </script>
 
 <template>
-  <el-row :gutter="50" style="margin-top: -10vh;width: 98%; align-items: center">
+  <el-row :gutter="40" style="margin-top: -10vh;width: 98%; align-items: center">
     <el-col :span="6" style="text-align: center;">
       <!--      <el-text style="font-size:5vh;color: white;">请预览转换结果</el-text>-->
       <!--      <br>-->
       <div style="width: 100%;border-radius: 10px;background-color: white;height: 100%;">
         <div style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;">
           <p style="height: 1px;"></p>
+          <el-text style="font-size: 2vh;">第 {{ progress + 1 }} 个，共 {{ selectedMusicListCount }} 个</el-text>
+          <br>
           <el-text style="font-size: 2vh;">当前歌单名：{{ props.selectedMusicList[progress].playListName }}</el-text>
           <br>
           <el-text style="font-size: 2vh;">包含歌曲：{{ props.selectedMusicList[progress].songNum }}首
@@ -290,7 +378,21 @@ function skipCurrentMusicList() {
           <el-slider v-model="similarity" :show-tooltip="false"
                      style="margin-top: 10px; width: 90%"/>
         </div>
-        <el-row align="middle" justify="center" style="margin-top: 20px" type="flex">
+        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
+          <el-radio-group v-model="mode" size="large">
+            <el-tooltip
+                content="将歌曲的[歌名] [歌手] [专辑]分别进行匹配，<br>找到相似度最大的歌曲。<br>表格中将显示每个匹配项的相似度。"
+                raw-content>
+              <el-radio-button label="分离匹配"/>
+            </el-tooltip>
+            <el-tooltip
+                content="将歌曲的[歌名] [歌手] [专辑]拼接成一个字符串，<br>进行匹配，找到相似度最大的歌曲。<br>表格中将显示整体匹配的相似度。"
+                raw-content>
+              <el-radio-button label="总体匹配"/>
+            </el-tooltip>
+          </el-radio-group>
+        </el-row>
+        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
           <el-text style="margin-right: 15px; font-size: 2vh">启用括号去除</el-text>
           <el-switch
               v-model="enableParenthesesRemoval"
@@ -319,9 +421,9 @@ function skipCurrentMusicList() {
               size="large"/>
         </el-row>
 
-        <el-button size="large" style="font-size: large; margin-top: 25px;margin-bottom: 15px; width: 10vw;"
+        <el-button size="large" style="font-size: large; margin-top: 10px;margin-bottom: 15px; width: 10vw;"
                    type="primary"
-                   @click="getData">
+                   @click="getConvertResult">
           预览结果
         </el-button>
         <br>
@@ -398,9 +500,6 @@ function skipCurrentMusicList() {
 
       </div>
 
-      <!--        <el-button id="nextStep" key="2" size="large"-->
-      <!--                   style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="saveSelection">下一步-->
-      <!--        </el-button>-->
     </el-col>
     <el-col :span="18" style="text-align: center;z-index: 1;">
       <div align="center" style="width: 100%;border-radius: 10px;background-color: white;margin-top: 50px">
@@ -415,15 +514,21 @@ function skipCurrentMusicList() {
 
         <el-table
             ref="tableSimple"
+            v-loading="loading"
             :data="tableSimpleData"
             :row-style="rowStyle"
-            border fit
+            border element-loading-text="Loading..."
+            empty-text="暂无数据" fit highlight-current-row
             max-height="450" style="width: 100%; border-radius: 10px;font-size: 16px;"
             table-layout="auto"
             @row-click="toggleRowExpansion">
-          <el-table-column type="expand">
+<!--            @expand-change="showRowTransition">-->
+          <el-table-column type="expand" width="1">
             <template #default="props">
-              <div style="margin-left: 25px;margin-right: 25px;">
+              <!--              <el-collapse-transition>-->
+              <!--                <div v-show="collapseTransition[tableSimpleData.indexOf(props.row)]"-->
+              <div style="margin-left: 25px;margin-right: 25px">
+                <p style="font-size: 8px"></p>
                 <el-text style="font-size: 2vh; font-weight: bold">匹配详情</el-text>
                 <el-button icon="Delete" style="font-size: 1.8vh; float: right;" type="danger"
                            @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]=true;deleteAll=false;deleteRow=tableSimpleData.indexOf(props.row)*3">
@@ -474,9 +579,14 @@ function skipCurrentMusicList() {
 
                 </el-dialog>
 
-                <el-button icon="Edit" style="font-size: 1.8vh; float: right; margin-right: 5px" type="primary"
+                <el-button icon="Edit" style="font-size: 1.8vh; float: right; margin-right: 10px" type="primary"
                            @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = true; modifyRow = tableSimpleData.indexOf(props.row) * 3; manualSelectMusicId = -1; queryInput=''">
                   修改
+                </el-button>
+
+                <el-button icon="Check" style="font-size: 1.8vh; float: right;" type="success"
+                           @click="handleSame(props)">
+                  相同
                 </el-button>
                 <el-dialog
                     v-model="dialogVisibleModify[tableSimpleData.indexOf(props.row)]"
@@ -533,6 +643,7 @@ function skipCurrentMusicList() {
                 <el-table
                     ref="tableDetailed"
                     :data="tableDetailedData.slice(tableSimpleData.indexOf(props.row) * 3, tableSimpleData.indexOf(props.row) * 3 + 3)"
+                    :span-method="spanMethod"
                     border
                     fit max-height="500" style="width: 100%; font-size: 16px;margin-bottom: 15px"
                     table-layout="auto">
@@ -544,6 +655,7 @@ function skipCurrentMusicList() {
                                    width="100"></el-table-column>
                 </el-table>
               </div>
+              <!--              </el-collapse-transition>-->
             </template>
 
           </el-table-column>
@@ -554,12 +666,6 @@ function skipCurrentMusicList() {
           <el-table-column align="center" label="自动匹配成功" prop="autoMatched" sortable
                            width="145">
             <template #default="scope">
-              <!--              <el-icon color="green" v-if="scope.row.autoMatched==='true'" style="font-size: 20px">-->
-              <!--                <Check/>-->
-              <!--              </el-icon>-->
-              <!--              <el-icon color="red" v-else>-->
-              <!--                <Close/>-->
-              <!--              </el-icon>-->
               <el-tag v-if="scope.row.autoMatched === 'true'" style="font-size: 17px;width: 40px;" type="success">是
               </el-tag>
               <el-tag v-else-if="scope.row.autoMatched === 'false'" style="font-size: 17px; width: 40px;" type="danger">
@@ -593,5 +699,17 @@ function skipCurrentMusicList() {
 </template>
 
 <style scoped>
+::v-deep .el-table .el-table__expanded-cell {
+  padding: 0;
+//background-color: rgba(110, 110, 110, 0.20) !important;
+}
+
+::v-deep .el-table__body tr.current-row > td {
+  background: rgba(110, 110, 110, 0.20) !important;
+}
+
+::v-deep .el-table__expand-icon {
+  display: none !important;
+}
 
 </style>

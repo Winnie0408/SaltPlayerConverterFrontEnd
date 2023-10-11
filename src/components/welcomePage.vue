@@ -14,7 +14,7 @@
               <el-button class="transition-text" size="large"
                          style="font-size:25px; margin-top: 25px; padding: 20px 30px;"
                          type="primary"
-                         @click="changePage()">开始
+                         @click="testServer">开始
               </el-button>
             </div>
           </transition>
@@ -117,14 +117,77 @@ html, body {
   text-align: center;
   color: white;
 }
+
+</style>
+
+<style>
+.notificationError {
+  background-color: rgb(255, 235, 235) !important;
+  border: rgb(255, 235, 235) !important;
+}
+
+.notificationSuccess {
+  background-color: rgb(220, 255, 220) !important;
+  border: rgb(220, 255, 220) !important;
+}
+
+.notificationWarning {
+  background-color: rgb(250, 250, 200) !important;
+  border: rgb(255, 255, 200) !important;
+}
+
+.notificationInfo {
+  background-color: rgb(230, 230, 230) !important;
+  border: rgb(230, 230, 230) !important;
+}
+
+.el-loading-text {
+  font-size: 20px !important;
+}
 </style>
 
 
 <script lang="ts" setup>
+import {ElLoading, ElNotification} from 'element-plus'
+import axios from "axios";
+import {ref} from "vue";
 
 const emit = defineEmits(["changePage"]);
 
 function changePage() {
   emit("changePage", 1);
+}
+
+function testServer() {
+  fullscreenLoading()
+  axios.get("/test").then((backEnd) => {
+    loading.value.close()
+    console.log(backEnd.data)
+    changePage()
+  }).catch(err => {
+    loading.value.close()
+    connectServerFailedNoti(err)
+    console.log(err)
+  })
+}
+
+const connectServerFailedNoti = (err) => {
+  ElNotification({
+    title: '服务器连接失败',
+    message: "错误详情：" + err,
+    type: 'error',
+    customClass: 'notificationError',
+    duration: 5000,
+  })
+}
+
+const loading = ref(null)
+
+const fullscreenLoading = () => {
+  loading.value = ElLoading.service({
+    lock: true,
+    text: '连接服务器...',
+    background: 'rgba(0,0,0,0.7)',
+  })
 }
 </script>

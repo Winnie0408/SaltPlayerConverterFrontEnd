@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import {onMounted, ref} from 'vue'
 import axios from "axios";
+import {ElNotification} from "element-plus";
 
 
 const table = ref(null)
 const tableData = ref([])
+const loading = ref(true)
 
 function handleRowClick(row, column, event) {
   table.value.toggleRowSelection(row);
@@ -15,7 +17,6 @@ function getTableData() {
     method: 'GET',
     url: '/databaseSummary'
   }).then(backEnd => {
-    console.log(backEnd.data)
     for (const id in backEnd.data.playListInfo) {
       tableData.value.push({
         playListId: id,
@@ -23,8 +24,10 @@ function getTableData() {
         songNum: backEnd.data.playListInfo[id][1]
       })
     }
+    loading.value = false
   }).catch(err => {
-    console.log(err)
+    makeNoti('从服务器获取歌单信息失败，请重试', '错误详情：' + err, 'error')
+    loading.value = false
   })
 }
 
@@ -43,7 +46,7 @@ const selectedRows = ref([]) // 存储选中行的数据
 
 function saveSelection() {
   if (selectedRowsTemp.value.length === 0) {
-    console.log('请选择至少一个歌单')
+    makeNoti('请选择至少一个歌单', '', 'error')
     return
   }
   selectedRows.value = selectedRowsTemp.value
@@ -65,6 +68,15 @@ function rowStyle() {
   return 'cursor: pointer;'
 }
 
+const makeNoti = (title: string, message: string, type: string) => {
+  ElNotification({
+    title: title,
+    message: message,
+    type: type + '',
+    customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
+    duration: 5000,
+  })
+}
 </script>
 
 <template>
@@ -77,9 +89,11 @@ function rowStyle() {
         <div style="width: 55vw;margin-top: 25px;border-radius: 10px;">
           <el-table
               ref="table"
+              v-loading="loading"
               :data="tableData"
-              :row-style="rowStyle" border fit
-              max-height="350"
+              :row-style="rowStyle"
+              border element-loading-text="Loading..." empty-text="暂无数据"
+              fit max-height="350"
               style="width: 100%; border-radius: 10px;font-size: 16px"
               table-layout="auto"
               @row-click="handleRowClick"

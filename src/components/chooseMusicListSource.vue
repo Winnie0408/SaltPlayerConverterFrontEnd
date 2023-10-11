@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import {ref} from 'vue'
 import axios from "axios";
+import {ElLoading, ElNotification} from "element-plus";
 
 const value = ref('')
 const options = [
@@ -85,11 +86,22 @@ function resetBackgroundColor() {
   }, 800);
 }
 
+const loading = ref(null)
+
+const fullscreenLoading = () => {
+  loading.value = ElLoading.service({
+    lock: true,
+    text: '加载中...',
+    background: 'rgba(0,0,0,0.7)',
+  })
+}
+
 function nextStep() {
   if (value.value === '') {
-    console.log('请选择歌单来源')
+    makeNoti('请选择歌单来源', '', 'warning')
     return
   }
+  fullscreenLoading()
   axios({
     method: 'get',
     url: '/init',
@@ -97,10 +109,21 @@ function nextStep() {
       source: value.value
     }
   }).then(backEnd => {
+    loading.value.close()
     next();
-    console.log(backEnd.data)
   }).catch(err => {
-    console.log(err)
+    makeNoti('初始化失败', "错误详情：" + err, 'error')
+    loading.value.close()
+  })
+}
+
+const makeNoti = (title: string, message: string, type: string) => {
+  ElNotification({
+    title: title,
+    message: message,
+    type: type + '',
+    customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
+    duration: 5000,
   })
 }
 </script>

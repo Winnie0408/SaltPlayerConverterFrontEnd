@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import axios from "axios";
+import {ElNotification} from "element-plus";
 
 const props = defineProps({
   source: String,
@@ -13,6 +14,17 @@ function next() {
 
 function downloadAll() {
   window.open(axios.getUri() + "/downloadAll")
+  makeNoti('成功发起下载请求', '', 'success')
+}
+
+const makeNoti = (title: string, message: string, type: string) => {
+  ElNotification({
+    title: title,
+    message: message,
+    type: type + '',
+    customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
+    duration: 5000,
+  })
 }
 </script>
 

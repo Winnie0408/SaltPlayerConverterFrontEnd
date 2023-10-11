@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import {ref} from 'vue'
-import {genFileId, UploadInstance, UploadProps, UploadRawFile} from "element-plus";
+import {ElLoading, ElNotification, genFileId, UploadInstance, UploadProps, UploadRawFile} from "element-plus";
 import axios from "axios";
 import {UploadFilled} from "@element-plus/icons-vue";
 
 const upload = ref<UploadInstance>()
 const handleExceed: UploadProps['onExceed'] = (files) => {
   upload.value!.clearFiles()
-  console.log('替换之前上传的文件')
+  makeNoti('文件数量超出限制', '将替换之前上传的文件', 'info')
   success.value = false
   const file = files[0] as UploadRawFile
   file.uid = genFileId()
@@ -15,7 +15,13 @@ const handleExceed: UploadProps['onExceed'] = (files) => {
   tips.value = '您已选择文件：' + file.name + "，"
   tips2.value = '点击重新上传'
 }
+
+const isUpload = ref(false)
 const submitUpload = () => {
+  if (!isUpload.value) {
+    makeNoti('请选择文件', '', 'warning')
+    return
+  }
   upload.value!.submit()
 }
 
@@ -23,12 +29,23 @@ const tips = ref('将文件拖到此处，或')
 const tips2 = ref('点击上传')
 const success = ref(false)
 
+const loading = ref(null)
+
+const fullscreenLoading = () => {
+  loading.value = ElLoading.service({
+    lock: true,
+    text: '上传中...',
+    background: 'rgba(0,0,0,0.7)',
+  })
+}
+
 function uploadMusicList(file: UploadRawFile) {
   file = file.file
   if (file.size > 1024 * 1024 * 5) {
-    console.log('文件大小超出限制')
+    makeNoti('文件大小超出限制 (5MiB)', '请重新选择', 'warning')
     return
   }
+  fullscreenLoading()
   const formData = new FormData()
   formData.append('musicList', file)
   axios({
@@ -39,16 +56,19 @@ function uploadMusicList(file: UploadRawFile) {
       'Content-Type': 'multipart/form-data'
     }
   }).then(backEnd => {
-    console.log(backEnd.data)
+    makeNoti('上传成功', '点击 下一步 以继续', 'success')
     success.value = true
+    loading.value.close()
   }).catch(err => {
-    console.log(err)
+    makeNoti('上传失败，请重试', '错误详情：' + err, 'error')
+    loading.value.close()
   })
 }
 
 function handleSelect(file: UploadRawFile) {
   tips.value = '您已选择文件：' + file.name + "，"
   tips2.value = '点击重新上传'
+  isUpload.value = true
 }
 
 const emit = defineEmits(["next"]);
@@ -60,14 +80,24 @@ const props = defineProps({
 function next() {
   emit("next", props.source, 1);
 }
+
+const makeNoti = (title: string, message: string, type: string) => {
+  ElNotification({
+    title: title,
+    message: message,
+    type: type + '',
+    customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
+    duration: 5000,
+  })
+}
 </script>
 
 <template>
   <el-row style="margin-top: -10vh">
     <el-col>
-      <el-text style="font-size:6vh;color: white;">请上传我们所需要的文件</el-text>
-      <br>
       <div style="margin-top: 25px;text-align: center">
+        <el-text style="font-size:6vh;color: white;">请上传我们所需要的文件</el-text>
+        <p style="margin-top: 2px"></p>
         <el-text style="font-size:3vh;color: white;">歌曲列表文件名：本地音乐导出.txt</el-text>
       </div>
       <div align="center">
@@ -133,6 +163,4 @@ body {
     opacity: 0;
   }
 }
-
-
 </style>
