@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-// import {ElCollapseTransition} from 'element-plus'
+import {ElCollapseTransition, ElLoading, ElNotification} from 'element-plus'
 import {nextTick, onMounted, ref} from "vue";
 import {Check, Close} from '@element-plus/icons-vue'
 import axios from "axios";
-import {ElLoading, ElNotification} from "element-plus";
 
 const props = defineProps({
   source: String,
@@ -37,7 +36,7 @@ const tableSimpleData = ref([])
 const tableDetailedData = ref([])
 const dialogVisibleModify = ref([])
 const dialogVisibleDelete = ref([])
-// const collapseTransition = ref([])
+const collapseTransition = ref([])
 const dialogVisibleSave = ref(false)
 const dialogVisibleSkip = ref(false)
 const dialogVisibleFinish = ref(false)
@@ -97,7 +96,7 @@ function getConvertResult() {
       })
       dialogVisibleModify.value.push(false)
       dialogVisibleDelete.value.push(false)
-      // collapseTransition.value.push(false)
+      collapseTransition.value.push(false)
       if (backEnd.data[count.value][0][0] === 'true') {
         successNum.value++
       }
@@ -105,7 +104,7 @@ function getConvertResult() {
     loading.value = false
     // unfoldNotMatched()
   }).catch(err => {
-    makeNoti('转换结果获取失败，请重试', '错误详情：' + err, 'error')
+    makeNoti('转换结果获取失败，请重试', '错误详情：' + err.response.data.msg, 'error')
     loading.value = false
   })
 }
@@ -132,20 +131,20 @@ function foldAll() {
 
 const toggleRowExpansion = (row) => {
   const delay = ref(0)
-  // if (collapseTransition.value[row.index] === true)
-  //   delay.value = 300;
-  // collapseTransition.value[row.index] = false;
+  if (collapseTransition.value[row.index] === true)
+    delay.value = 300;
+  collapseTransition.value[row.index] = false;
   setTimeout(() => {
     tableSimple.value.toggleRowExpansion(row);
   }, delay.value)
   // tableSimple.value.toggleRowExpansion(row);
 }
 
-// const showRowTransition = (row) => {
-//   nextTick(() => {
-//     collapseTransition.value[row.index] = true;
-//   })
-// }
+const showRowTransition = (row) => {
+  nextTick(() => {
+    collapseTransition.value[row.index] = true;
+  })
+}
 
 function rowStyle() {
   return 'cursor: pointer;'
@@ -165,7 +164,7 @@ const querySearchAsync = (queryString, cb) => {
   }).then(backEnd => {
     cb(backEnd.data)
   }).catch(err => {
-    makeNoti('搜索失败，请重试', '错误详情：' + err, 'error')
+    makeNoti('搜索失败，请重试', '错误详情：' + err.response.data.msg, 'error')
   })
 }
 
@@ -176,7 +175,11 @@ const handleSelect = (item) => {
 }
 
 function saveManualMatch(rowIndex: number) {
-  if (queryInput.value.includes(' - ')) {
+  if (queryInput.value.includes(' - ') && manualSelectMusicId.value !== -1) {
+    if (tableSimpleData.value[modifyRow.value / 3].autoMatched === 'false') {
+      successNum.value++;
+    }
+
     tableDetailedData.value[modifyRow.value].localMusic = queryInput.value.split(' - ')[0]
     tableDetailedData.value[modifyRow.value].similarity = "手动匹配"
 
@@ -189,20 +192,29 @@ function saveManualMatch(rowIndex: number) {
     tableSimpleData.value[modifyRow.value / 3].autoMatched = "manual"
     tableSimpleData.value[modifyRow.value / 3].songId = manualSelectMusicId.value
 
-    successNum.value++
     dialogVisibleModify.value[rowIndex] = false;
     tableSimple.value.toggleRowExpansion(tableSimpleData.value[rowIndex], false)
-    makeNoti('保存成功', '', 'success')
+    makeNoti('保存成功', '', 'success', 3000)
     jumpToNextFailItem(200, rowIndex)
+  } else {
+    makeNoti('保存失败', '请点击弹出框中的项', 'error')
   }
+}
+
+function rebuildIndex() {
+  tableSimpleData.value.forEach((row, index) => {
+    row.index = index
+  })
 }
 
 const deleteAll = ref(false)
 
 function handleDelete(rowIndex: number) {
+  if (tableSimpleData.value[deleteRow.value / 3].autoMatched !== 'false') {
+    successNum.value--;
+  }
   tableSimpleData.value.splice(deleteRow.value / 3, 1)
   tableDetailedData.value.splice(deleteRow.value, 3)
-  makeNoti('删除成功', '', 'success')
   if (deleteAll.value) {
     for (const i = ref(0); i.value < tableSimpleData.value.length; i.value++) {
       if (tableSimpleData.value[i.value].autoMatched === 'false') {
@@ -212,7 +224,9 @@ function handleDelete(rowIndex: number) {
       }
     }
     makeNoti('已删除该歌单所有匹配失败的歌曲', '', 'success')
-  }
+  } else
+    makeNoti('删除成功', '', 'success')
+  rebuildIndex()
   dialogVisibleDelete.value[rowIndex] = false;
   tableSimple.value.toggleRowExpansion(tableSimpleData.value[rowIndex], false)
   jumpToNextFailItem(200, rowIndex)
@@ -220,19 +234,18 @@ function handleDelete(rowIndex: number) {
 
 function jumpToNextFailItem(delay: number = 0, rowIndex: number = 0) {
   setTimeout(() => {
-    tableSimple.value.clearSort()
+    // tableSimple.value.clearSort()
     for (const i = ref(rowIndex); i.value < tableSimple.value.data.length; i.value++) {
       if (tableSimple.value.data[i.value].autoMatched === 'false') {
         tableSimple.value.setCurrentRow(tableSimple.value.data[i.value])
-        tableSimple.value.toggleRowExpansion(tableSimple.value.data[i.value], true)
-        // nextTick(()=>{
-        //   collapseTransition.value[i.value] = true;
-        // })
         nextTick(() => {
           tableSimple.value.scrollTo({
             top: (i.value - 1) * tableSimple.value.$el.querySelector('tbody tr').clientHeight,
             behavior: 'smooth'
           })
+        })
+        nextTick(() => {
+          toggleRowExpansion(tableSimple.value.data[i.value])
         })
         return
       }
@@ -240,10 +253,12 @@ function jumpToNextFailItem(delay: number = 0, rowIndex: number = 0) {
   }, delay)
 }
 
-const loading = ref(null)
+const loadingFullScreen = ref(null)
 
+// TODO
+// 可能无法正常隐藏，待测试
 const fullscreenLoading = () => {
-  loading.value = ElLoading.service({
+  loadingFullScreen.value = ElLoading.service({
     lock: true,
     text: '保存中...',
     background: 'rgba(0,0,0,0.7)',
@@ -271,6 +286,7 @@ function saveCurrentMusicList() {
   }).then(backEnd => {
     dialogVisibleSave.value = false
     makeNoti('歌单保存成功', '', 'success')
+    loadingFullScreen.value.close()
     if (progress.value === selectedMusicListCount.value - 1) {
       dialogVisibleFinish.value = true;
       return
@@ -284,14 +300,18 @@ function saveCurrentMusicList() {
     dialogVisibleDelete.value = []
     dialogVisibleSkip.value = false
     progress.value++
-    loading.value.close()
   }).catch(err => {
-    makeNoti('保存失败，请重试', '错误详情：' + err, 'error')
-    loading.value.close()
+    makeNoti('保存失败，请重试', '错误详情：' + err.response.data.msg, 'error')
+    loadingFullScreen.value.close()
   })
 }
 
 function skipCurrentMusicList() {
+  if (progress.value === selectedMusicListCount.value - 1) {
+    dialogVisibleSkip.value = false
+    dialogVisibleFinish.value = true;
+    return
+  }
   dialogVisibleSkip.value = false
   makeNoti('已放弃当前歌单的匹配', '', 'info')
   successNum.value = 0
@@ -306,14 +326,17 @@ function skipCurrentMusicList() {
 }
 
 function handleSame(props) {
-  // collapseTransition.value[tableSimpleData.value.indexOf(props.row)] = false;
-  successNum.value++;
-  // setTimeout(() => {
-  props.row.autoMatched = 'manual';
-  // }, 300)
-  tableSimple.value.toggleRowExpansion(tableSimpleData.value[props.$index], false)
+  collapseTransition.value[props.$index] = false;
+  if (props.row.autoMatched === 'false') {
+    successNum.value++;
+  }
+  setTimeout(() => {
+    tableSimpleData.value[props.$index].autoMatched = 'manual';
+    props.row.autoMatched = 'manual';
+    tableSimple.value.toggleRowExpansion(tableSimpleData.value[props.$index], false)
+  }, 300)
   jumpToNextFailItem(300, props.$index)
-  makeNoti('保存成功', '', 'success')
+  makeNoti('保存成功', '', 'success', 3000)
 }
 
 const mode = ref('分离匹配')
@@ -336,22 +359,19 @@ function spanMethod({row, column, rowIndex, columnIndex}) {
   }
 }
 
-const makeNoti = (title: string, message: string, type: string) => {
+const makeNoti = (title: string, message: string, type: string, duration: number = 5000) => {
   ElNotification({
     title: title,
     message: message,
     type: type + '',
     customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
-    duration: 5000,
+    duration: duration,
   })
 }
 
 // TODO
-// 表格展开收起动画
 // 移动端适配
 // 发送统计数据的开关
-// Bug: 表格顶端汇总，可能出现：失败-1首
-// Notification错误，展示后端返回的详细错误信息
 </script>
 
 <template>
@@ -521,53 +541,54 @@ const makeNoti = (title: string, message: string, type: string) => {
             empty-text="暂无数据" fit highlight-current-row
             max-height="450" style="width: 100%; border-radius: 10px;font-size: 16px;"
             table-layout="auto"
-            @row-click="toggleRowExpansion">
-<!--            @expand-change="showRowTransition">-->
+            @row-click="toggleRowExpansion"
+            @expand-change="showRowTransition">
+          @expand-change="showRowTransition">
           <el-table-column type="expand" width="1">
             <template #default="props">
-              <!--              <el-collapse-transition>-->
-              <!--                <div v-show="collapseTransition[tableSimpleData.indexOf(props.row)]"-->
-              <div style="margin-left: 25px;margin-right: 25px">
-                <p style="font-size: 8px"></p>
-                <el-text style="font-size: 2vh; font-weight: bold">匹配详情</el-text>
-                <el-button icon="Delete" style="font-size: 1.8vh; float: right;" type="danger"
-                           @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]=true;deleteAll=false;deleteRow=tableSimpleData.indexOf(props.row)*3">
-                  放弃
-                </el-button>
+              <el-collapse-transition>
+                <div v-show="collapseTransition[props.$index]"
+                     style="margin-left: 25px;margin-right: 25px">
+                  <p style="font-size: 8px"></p>
+                  <el-text style="font-size: 2vh; font-weight: bold">匹配详情</el-text>
+                  <el-button icon="Delete" style="font-size: 1.8vh; float: right;" type="danger"
+                             @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]=true;deleteAll=false;deleteRow=tableSimpleData.indexOf(props.row)*3">
+                    放弃
+                  </el-button>
 
-                <el-dialog
-                    v-model="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]"
-                    align-center
-                    append-to-body
-                    style="border-radius: 10px"
-                    title="确认要放弃匹配这首歌吗？"
-                    width="40%">
+                  <el-dialog
+                      v-model="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]"
+                      align-center
+                      append-to-body
+                      style="border-radius: 10px"
+                      title="确认要放弃匹配这首歌吗？"
+                      width="40%">
 
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
-                  <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌名：{{ tableDetailedData[deleteRow].source }}
-                  </el-text>
-                  <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">歌手：{{
-                      tableDetailedData[deleteRow + 1].source
-                    }}
-                  </el-text>
-                  <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">专辑：{{
-                      tableDetailedData[deleteRow + 2].source
-                    }}
-                  </el-text>
-                  <br><br>
+                    <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
+                    <br>
+                    <el-text style="font-size: 1.2vw;margin-top: 15px">歌名：{{ tableDetailedData[deleteRow].source }}
+                    </el-text>
+                    <br>
+                    <el-text style="font-size: 1.2vw;margin-top: 15px">歌手：{{
+                        tableDetailedData[deleteRow + 1].source
+                      }}
+                    </el-text>
+                    <br>
+                    <el-text style="font-size: 1.2vw;margin-top: 15px">专辑：{{
+                        tableDetailedData[deleteRow + 2].source
+                      }}
+                    </el-text>
+                    <br><br>
 
-                  <el-text style="margin-right: 15px;font-size: 2vh">放弃当前歌单所有匹配失败的歌曲</el-text>
-                  <el-switch
-                      v-model="deleteAll"
-                      :active-icon="Check"
-                      :inactive-icon="Close"
-                      inline-prompt
-                      size="large"/>
+                    <el-text style="margin-right: 15px;font-size: 2vh">放弃当前歌单所有匹配失败的歌曲</el-text>
+                    <el-switch
+                        v-model="deleteAll"
+                        :active-icon="Check"
+                        :inactive-icon="Close"
+                        inline-prompt
+                        size="large"/>
 
-                  <template #footer>
+                    <template #footer>
                     <span class="dialog-footer">
                       <el-button
                           @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)] = false">取消</el-button>
@@ -575,59 +596,59 @@ const makeNoti = (title: string, message: string, type: string) => {
                         确定
                       </el-button>
                     </span>
-                  </template>
+                    </template>
 
-                </el-dialog>
+                  </el-dialog>
 
-                <el-button icon="Edit" style="font-size: 1.8vh; float: right; margin-right: 10px" type="primary"
-                           @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = true; modifyRow = tableSimpleData.indexOf(props.row) * 3; manualSelectMusicId = -1; queryInput=''">
-                  修改
-                </el-button>
+                  <el-button icon="Edit" style="font-size: 1.8vh; float: right; margin-right: 10px" type="primary"
+                             @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = true; modifyRow = tableSimpleData.indexOf(props.row) * 3; manualSelectMusicId = -1; queryInput=''">
+                    修改
+                  </el-button>
 
-                <el-button icon="Check" style="font-size: 1.8vh; float: right;" type="success"
-                           @click="handleSame(props)">
-                  相同
-                </el-button>
-                <el-dialog
-                    v-model="dialogVisibleModify[tableSimpleData.indexOf(props.row)]"
-                    align-center
-                    append-to-body
-                    style="border-radius: 10px"
-                    title="修改匹配结果"
-                    width="40%">
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
-                  <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
-                           @click="queryInput+=tableDetailedData[modifyRow].source">
-                    歌名：{{ tableDetailedData[modifyRow].source }}
-                  </el-text>
-                  <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px;cursor:pointer;"
-                           @click="queryInput+=tableDetailedData[modifyRow+1].source">歌手：{{
-                      tableDetailedData[modifyRow + 1].source
-                    }}
-                  </el-text>
-                  <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
-                           @click="queryInput+=tableDetailedData[modifyRow+2].source">专辑：{{
-                      tableDetailedData[modifyRow + 2].source
-                    }}
-                  </el-text>
-                  <br>
-                  <el-text style="font-size: 1.2vw;margin-top: 15px">Tips：点击文字可直接将其填入搜索框
-                  </el-text>
-                  <br>
-                  <el-autocomplete
-                      v-model="queryInput"
-                      :debounce=500
-                      :fetch-suggestions="querySearchAsync"
-                      clearable
-                      placeholder="搜索您的曲库..."
-                      style="width: 60%; font-size: 30px"
-                      @select="handleSelect">
-                  </el-autocomplete>
+                  <el-button icon="Check" style="font-size: 1.8vh; float: right;" type="success"
+                             @click="handleSame(props)">
+                    相同
+                  </el-button>
+                  <el-dialog
+                      v-model="dialogVisibleModify[tableSimpleData.indexOf(props.row)]"
+                      align-center
+                      append-to-body
+                      style="border-radius: 10px"
+                      title="修改匹配结果"
+                      width="40%">
+                    <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
+                    <br>
+                    <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
+                             @click="queryInput+=tableDetailedData[modifyRow].source">
+                      歌名：{{ tableDetailedData[modifyRow].source }}
+                    </el-text>
+                    <br>
+                    <el-text style="font-size: 1.2vw;margin-top: 15px;cursor:pointer;"
+                             @click="queryInput+=tableDetailedData[modifyRow+1].source">歌手：{{
+                        tableDetailedData[modifyRow + 1].source
+                      }}
+                    </el-text>
+                    <br>
+                    <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
+                             @click="queryInput+=tableDetailedData[modifyRow+2].source">专辑：{{
+                        tableDetailedData[modifyRow + 2].source
+                      }}
+                    </el-text>
+                    <br>
+                    <el-text style="font-size: 1vw;margin-top: 15px">Tips：点击文字可直接将其填入搜索框
+                    </el-text>
+                    <br>
+                    <el-autocomplete
+                        v-model="queryInput"
+                        :debounce=500
+                        :fetch-suggestions="querySearchAsync"
+                        clearable
+                        placeholder="搜索您的曲库..."
+                        style="width: 60%; font-size: 30px"
+                        @select="handleSelect">
+                    </el-autocomplete>
 
-                  <template #footer>
+                    <template #footer>
                     <span class="dialog-footer">
                       <el-button
                           @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = false">取消
@@ -636,34 +657,34 @@ const makeNoti = (title: string, message: string, type: string) => {
                         确定
                       </el-button>
                     </span>
-                  </template>
+                    </template>
 
-                </el-dialog>
-                <p></p>
-                <el-table
-                    ref="tableDetailed"
-                    :data="tableDetailedData.slice(tableSimpleData.indexOf(props.row) * 3, tableSimpleData.indexOf(props.row) * 3 + 3)"
-                    :span-method="spanMethod"
-                    border
-                    fit max-height="500" style="width: 100%; font-size: 16px;margin-bottom: 15px"
-                    table-layout="auto">
-                  <el-table-column align="center" label="类型" prop="type" width="60"></el-table-column>
-                  <el-table-column :label="sourceChn" prop="source" show-overflow-tooltip sortable></el-table-column>
-                  <el-table-column label="本地音乐" prop="localMusic" show-overflow-tooltip
-                                   sortable></el-table-column>
-                  <el-table-column align="center" label="相似度" prop="similarity" sortable
-                                   width="100"></el-table-column>
-                </el-table>
-              </div>
-              <!--              </el-collapse-transition>-->
+                  </el-dialog>
+                  <p></p>
+                  <el-table
+                      ref="tableDetailed"
+                      :data="tableDetailedData.slice(tableSimpleData.indexOf(props.row) * 3, tableSimpleData.indexOf(props.row) * 3 + 3)"
+                      :span-method="spanMethod"
+                      border
+                      fit max-height="500" style="width: 100%; font-size: 16px;margin-bottom: 15px"
+                      table-layout="auto">
+                    <el-table-column align="center" label="类型" prop="type" width="60"></el-table-column>
+                    <el-table-column :label="sourceChn" prop="source" show-overflow-tooltip></el-table-column>
+                    <el-table-column label="本地音乐" prop="localMusic" show-overflow-tooltip
+                    ></el-table-column>
+                    <el-table-column align="center" label="相似度" prop="similarity"
+                                     width="100"></el-table-column>
+                  </el-table>
+                </div>
+              </el-collapse-transition>
             </template>
 
           </el-table-column>
           <el-table-column align="center" label="序号" type="index" width="60"></el-table-column>
-          <el-table-column label="歌名" prop="songName" show-overflow-tooltip sortable></el-table-column>
-          <el-table-column label="歌手" prop="songArtist" show-overflow-tooltip sortable></el-table-column>
-          <el-table-column label="专辑" prop="songAlbum" show-overflow-tooltip sortable></el-table-column>
-          <el-table-column align="center" label="自动匹配成功" prop="autoMatched" sortable
+          <el-table-column label="歌名" prop="songName" show-overflow-tooltip></el-table-column>
+          <el-table-column label="歌手" prop="songArtist" show-overflow-tooltip></el-table-column>
+          <el-table-column label="专辑" prop="songAlbum" show-overflow-tooltip></el-table-column>
+          <el-table-column align="center" label="自动匹配成功" prop="autoMatched"
                            width="145">
             <template #default="scope">
               <el-tag v-if="scope.row.autoMatched === 'true'" style="font-size: 17px;width: 40px;" type="success">是
@@ -691,7 +712,7 @@ const makeNoti = (title: string, message: string, type: string) => {
         </el-button>
         |
         <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px" type="primary"
-                   @click="jumpToNextFailItem">跳转并展开下一匹配失败的项
+                   @click="jumpToNextFailItem">跳转到第一个匹配失败的项
         </el-button>
       </div>
     </el-col>

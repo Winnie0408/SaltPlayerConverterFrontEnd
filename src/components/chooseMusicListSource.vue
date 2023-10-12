@@ -112,7 +112,7 @@ function nextStep() {
     loading.value.close()
     next();
   }).catch(err => {
-    makeNoti('初始化失败', "错误详情：" + err, 'error')
+    makeNoti('初始化失败', "错误详情：" + err.response.data.msg, 'error')
     loading.value.close()
   })
 }

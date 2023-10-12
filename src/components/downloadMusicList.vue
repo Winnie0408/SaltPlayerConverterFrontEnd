@@ -12,9 +12,32 @@ function next() {
   emit("next", props.source, 1);
 }
 
-function downloadAll() {
-  window.open(axios.getUri() + "/downloadAll")
-  makeNoti('成功发起下载请求', '', 'success')
+async function downloadAll() {
+// 该方法无法唤起第三方下载器（？）
+  await axios.get(axios.getUri() + "/downloadAll", {
+    responseType: 'blob',
+  }).then(backEnd => {
+    const blob = new Blob([backEnd.data], {type: backEnd.headers['content-type']});
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = '转换结果.zip';
+    document.body.appendChild(link);
+    link.click(); // 模拟点击链接来下载文件
+    document.body.removeChild(link);
+    makeNoti('成功发起下载请求', '', 'success')
+  }).catch(err => {
+    switch (err.response.status) {
+      case 403:
+        makeNoti('下载失败', '请先完成初始化', 'error')
+        break;
+      case 404:
+        makeNoti('下载失败', '您似乎没有对任何歌单进行转换操作', 'error')
+        break;
+      default:
+        makeNoti('下载失败', '', 'error')
+    }
+  });
 }
 
 const makeNoti = (title: string, message: string, type: string) => {

@@ -61,7 +61,7 @@ function uploadMusicList(file: UploadRawFile) {
     success.value = true
     loading.value.close()
   }).catch(err => {
-    makeNoti('上传失败，请重试', '错误详情：' + err, 'error')
+    makeNoti('上传失败，请重试', '错误详情：' + err.response.data.msg, 'error')
     loading.value.close()
   })
 }
@@ -114,7 +114,7 @@ const makeNoti = (title: string, message: string, type: string) => {
       <div style="margin-top: 25px">
         <el-text style="font-size:6vh;color: white;">请上传我们所需要的文件</el-text>
         <p style="margin-top: 2px"></p>
-        <el-text style="text-align: center;font-size:3vh;color: white;">数据库文件名：{{ getDbName }}</el-text>
+        <el-text style="text-align: center;font-size:3vh;color: white;">数据库：{{ getDbName }}</el-text>
       </div>
       <div align="center">
         <el-upload

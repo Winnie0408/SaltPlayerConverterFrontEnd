@@ -26,7 +26,7 @@ function getTableData() {
     }
     loading.value = false
   }).catch(err => {
-    makeNoti('从服务器获取歌单信息失败，请重试', '错误详情：' + err, 'error')
+    makeNoti('获取歌单信息失败，请重试', '错误详情：' + err.response.data.msg, 'error')
     loading.value = false
   })
 }

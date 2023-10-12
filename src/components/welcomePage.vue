@@ -162,12 +162,12 @@ function testServer() {
   fullscreenLoading()
   axios.get("/test").then((backEnd) => {
     loading.value.close()
-    console.log(backEnd.data)
-    changePage()
+    setTimeout(() => {
+      changePage()
+    }, 300)
   }).catch(err => {
     loading.value.close()
     connectServerFailedNoti(err)
-    console.log(err)
   })
 }
 
