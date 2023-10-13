@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import {ElCollapseTransition, ElLoading, ElNotification} from 'element-plus'
+import {ElCollapseTransition, ElNotification} from 'element-plus'
 import {nextTick, onMounted, ref} from "vue";
 import {Check, Close} from '@element-plus/icons-vue'
 import axios from "axios";
@@ -9,7 +9,7 @@ const props = defineProps({
   selectedMusicList: Array
 })
 
-const emit = defineEmits(["next"]);
+const emit = defineEmits(["next", "showLoadingSpinner"]);
 
 function next() {
   emit("next", props.source, 1);
@@ -253,16 +253,8 @@ function jumpToNextFailItem(delay: number = 0, rowIndex: number = 0) {
   }, delay)
 }
 
-const loadingFullScreen = ref(null)
-
-// TODO
-// 可能无法正常隐藏，待测试
-const fullscreenLoading = () => {
-  loadingFullScreen.value = ElLoading.service({
-    lock: true,
-    text: '保存中...',
-    background: 'rgba(0,0,0,0.7)',
-  })
+function showLoadingSpinner(show: boolean) {
+  emit("showLoadingSpinner", show)
 }
 
 function saveCurrentMusicList() {
@@ -271,7 +263,7 @@ function saveCurrentMusicList() {
     makeNoti('歌单数据未加载', '请先点击 预览结果 按钮', 'error')
     return
   }
-  fullscreenLoading()
+  showLoadingSpinner(true)
   const result = {};
   tableSimpleData.value.forEach((row) => {
     result[row.index] = row.songId;
@@ -286,7 +278,7 @@ function saveCurrentMusicList() {
   }).then(backEnd => {
     dialogVisibleSave.value = false
     makeNoti('歌单保存成功', '', 'success')
-    loadingFullScreen.value.close()
+    showLoadingSpinner(false)
     if (progress.value === selectedMusicListCount.value - 1) {
       dialogVisibleFinish.value = true;
       return
@@ -302,7 +294,7 @@ function saveCurrentMusicList() {
     progress.value++
   }).catch(err => {
     makeNoti('保存失败，请重试', '错误详情：' + err.response.data.msg, 'error')
-    loadingFullScreen.value.close()
+    showLoadingSpinner(false)
   })
 }
 

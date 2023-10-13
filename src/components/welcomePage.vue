@@ -1,5 +1,6 @@
 <template>
   <el-container class="cover-container">
+    <div v-loading="loading" style="position: fixed; right: 65px;top: 35px;"/>
     <el-main class="cover-main">
       <el-row class="cover-row">
         <el-col :span="24" class="cover-title">
@@ -148,25 +149,25 @@ html, body {
 
 
 <script lang="ts" setup>
-import {ElLoading, ElNotification} from 'element-plus'
+import {ElNotification} from 'element-plus'
+import {ref} from 'vue'
 import axios from "axios";
-import {ref} from "vue";
 
-const emit = defineEmits(["changePage"]);
+const emit = defineEmits(["changePage", "showLoadingSpinner"]);
 
 function changePage() {
   emit("changePage", 1);
 }
 
+const loading = ref(false)
+
 function testServer() {
-  fullscreenLoading()
+  loading.value = true
   axios.get("/test").then((backEnd) => {
-    loading.value.close()
-    setTimeout(() => {
-      changePage()
-    }, 300)
+    loading.value = false
+    changePage()
   }).catch(err => {
-    loading.value.close()
+    loading.value = false
     connectServerFailedNoti(err)
   })
 }
@@ -178,16 +179,6 @@ const connectServerFailedNoti = (err) => {
     type: 'error',
     customClass: 'notificationError',
     duration: 5000,
-  })
-}
-
-const loading = ref(null)
-
-const fullscreenLoading = () => {
-  loading.value = ElLoading.service({
-    lock: true,
-    text: '连接服务器...',
-    background: 'rgba(0,0,0,0.7)',
   })
 }
 </script>

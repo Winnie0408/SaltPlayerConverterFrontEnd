@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import {ref} from 'vue'
-import {ElLoading, ElNotification, genFileId, UploadInstance, UploadProps, UploadRawFile} from "element-plus";
+import {ElNotification, genFileId, UploadInstance, UploadProps, UploadRawFile} from "element-plus";
 import axios from "axios";
 import {UploadFilled} from "@element-plus/icons-vue";
 
@@ -29,23 +29,13 @@ const tips = ref('将文件拖到此处，或')
 const tips2 = ref('点击上传')
 const success = ref(false)
 
-const loading = ref(null)
-
-const fullscreenLoading = () => {
-  loading.value = ElLoading.service({
-    lock: true,
-    text: '上传中...',
-    background: 'rgba(0,0,0,0.7)',
-  })
-}
-
 function uploadMusicList(file: UploadRawFile) {
   file = file.file
   if (file.size > 1024 * 1024 * 5) {
     makeNoti('文件大小超出限制 (5MiB)', '请重新选择', 'warning')
     return
   }
-  fullscreenLoading()
+  showLoadingSpinner(true)
   const formData = new FormData()
   formData.append('musicList', file)
   axios({
@@ -58,10 +48,10 @@ function uploadMusicList(file: UploadRawFile) {
   }).then(backEnd => {
     makeNoti('上传成功', '点击 下一步 以继续', 'success')
     success.value = true
-    loading.value.close()
+    showLoadingSpinner(false)
   }).catch(err => {
     makeNoti('上传失败，请重试', '错误详情：' + err.response.data.msg, 'error')
-    loading.value.close()
+    showLoadingSpinner(false)
   })
 }
 
@@ -71,7 +61,7 @@ function handleSelect(file: UploadRawFile) {
   isUpload.value = true
 }
 
-const emit = defineEmits(["next"]);
+const emit = defineEmits(["next", "showLoadingSpinner"]);
 
 const props = defineProps({
   source: String
@@ -79,6 +69,10 @@ const props = defineProps({
 
 function next() {
   emit("next", props.source, 1);
+}
+
+function showLoadingSpinner(show: boolean) {
+  emit("showLoadingSpinner", show)
 }
 
 const makeNoti = (title: string, message: string, type: string) => {

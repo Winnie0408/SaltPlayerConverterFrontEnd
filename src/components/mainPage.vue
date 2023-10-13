@@ -1,6 +1,7 @@
 <template>
   <div @transitionend="loadAnimation">
     <el-container class="cover-container">
+      <div v-loading="loading" style="position: fixed; right: 65px;top: 35px;z-index: 99"/>
       <el-header style="background-color: white;height: 80px;opacity: 0.7">
         <el-steps :active="active" align-center finish-status="success" style="margin-top: 15px">
           <el-step title="选择歌单来源"/>
@@ -13,7 +14,8 @@
       </el-header>
 
       <div>
-        <el-icon style="margin-left: 25px;margin-top: 25px;color: white;font-size: 30px;cursor: pointer;"
+        <el-icon class="myBackButton"
+                 style="margin-left: 25px;margin-top: 25px;color: white;font-size: 30px;cursor: pointer;"
                  @click="back()">
           <Back/>
         </el-icon>
@@ -23,8 +25,10 @@
           <keep-alive include="chooseMusicListSource">
             <component :is="componentName" :selectedMusicList="selectedMusicList" :source="source"
                        @changeLogo="(sourceName) => changeLogo(sourceName)"
+                       @hideBackButton="() => hideBackButton()"
                        @next="(msg,num) => next(msg,num)"
-                       @saveSelectedMusicList="(list: Array<any>) => saveSelection(list)"/>
+                       @saveSelectedMusicList="(list: Array<any>) => saveSelection(list)"
+                       @showLoadingSpinner="(show: boolean) => showLoadingSpinner(show)"/>
           </keep-alive>
         </transition>
         <!--                                    <component :is="previewMusicList"/>-->
@@ -57,6 +61,11 @@
   --end-color: ;
   --background-end-color: #000000;
   --start-color1: ;
+  --show-back: visible;
+}
+
+.myBackButton {
+  visibility: var(--show-back);
 }
 
 .icon-fade-enter-active {
@@ -297,6 +306,15 @@ const source = ref('')
 const logoPath = ref('')
 const logoName = ref('')
 const transitionName = ref('')
+const loading = ref(false)
+
+function hideBackButton() {
+  document.documentElement.style.setProperty('--show-back', 'hidden');
+}
+
+function showLoadingSpinner(show: boolean) {
+  loading.value = show;
+}
 
 function changeLogo(sourceName) {
   stopChange.value = true

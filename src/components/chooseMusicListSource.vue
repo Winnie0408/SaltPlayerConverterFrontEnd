@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import {ref} from 'vue'
 import axios from "axios";
-import {ElLoading, ElNotification} from "element-plus";
+import {ElNotification} from "element-plus";
 
 const value = ref('')
 const options = [
@@ -23,10 +23,14 @@ const options = [
   }
 ]
 
-const emit = defineEmits(["next", "changeLogo"]);
+const emit = defineEmits(["next", "changeLogo", "showLoadingSpinner"]);
 
 function next() {
   emit("next", value.value, 1);
+}
+
+function showLoadingSpinner(show: boolean) {
+  emit("showLoadingSpinner", show)
 }
 
 function changeLogo(sourceName: string) {
@@ -86,22 +90,12 @@ function resetBackgroundColor() {
   }, 800);
 }
 
-const loading = ref(null)
-
-const fullscreenLoading = () => {
-  loading.value = ElLoading.service({
-    lock: true,
-    text: '加载中...',
-    background: 'rgba(0,0,0,0.7)',
-  })
-}
-
 function nextStep() {
   if (value.value === '') {
     makeNoti('请选择歌单来源', '', 'warning')
     return
   }
-  fullscreenLoading()
+  showLoadingSpinner(true)
   axios({
     method: 'get',
     url: '/init',
@@ -109,11 +103,11 @@ function nextStep() {
       source: value.value
     }
   }).then(backEnd => {
-    loading.value.close()
+    showLoadingSpinner(false)
     next();
   }).catch(err => {
     makeNoti('初始化失败', "错误详情：" + err.response.data.msg, 'error')
-    loading.value.close()
+    showLoadingSpinner(false)
   })
 }
 
