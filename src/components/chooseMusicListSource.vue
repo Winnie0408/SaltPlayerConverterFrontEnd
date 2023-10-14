@@ -97,7 +97,7 @@ function nextStep() {
   }
   showLoadingSpinner(true)
   axios({
-    method: 'get',
+    method: 'GET',
     url: '/init',
     params: {
       source: value.value

@@ -233,10 +233,12 @@ function handleDelete(rowIndex: number) {
 }
 
 function jumpToNextFailItem(delay: number = 0, rowIndex: number = 0) {
+  const modified = ref(false)
   setTimeout(() => {
     // tableSimple.value.clearSort()
     for (const i = ref(rowIndex); i.value < tableSimple.value.data.length; i.value++) {
       if (tableSimple.value.data[i.value].autoMatched === 'false') {
+        modified.value = true
         tableSimple.value.setCurrentRow(tableSimple.value.data[i.value])
         nextTick(() => {
           tableSimple.value.scrollTo({
@@ -249,6 +251,9 @@ function jumpToNextFailItem(delay: number = 0, rowIndex: number = 0) {
         })
         return
       }
+    }
+    if (modified.value === false) {
+      makeNoti('没有匹配失败的项了', '', 'info')
     }
   }, delay)
 }
@@ -363,7 +368,6 @@ const makeNoti = (title: string, message: string, type: string, duration: number
 
 // TODO
 // 移动端适配
-// 发送统计数据的开关
 </script>
 
 <template>

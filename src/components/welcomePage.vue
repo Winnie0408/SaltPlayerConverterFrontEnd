@@ -12,8 +12,15 @@
           <br>
           <transition appear name="button">
             <div>
+              <el-text style="color: white;font-size: 25px">允许发送统计数据</el-text>
+              <el-switch
+                  v-model="allowStatistic"
+                  size="large"
+                  style="margin-left: 15px;padding-bottom: 10px"
+              />
+              <br>
               <el-button class="transition-text" size="large"
-                         style="font-size:25px; margin-top: 25px; padding: 20px 30px;"
+                         style="font-size:25px; margin-top: 15px; padding: 20px 30px;"
                          type="primary"
                          @click="testServer">开始
               </el-button>
@@ -160,10 +167,17 @@ function changePage() {
 }
 
 const loading = ref(false)
+const allowStatistic = ref(true)
 
 function testServer() {
   loading.value = true
-  axios.get("/test").then((backEnd) => {
+  axios({
+    method: 'GET',
+    url: '/test',
+    params: {
+      allowStatistic: allowStatistic.value
+    }
+  }).then((backEnd) => {
     loading.value = false
     changePage()
   }).catch(err => {
