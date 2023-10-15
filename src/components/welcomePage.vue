@@ -6,18 +6,20 @@
         <el-col :span="24" class="cover-title">
           <transition appear name="text">
             <div>
-              <el-text style="font-size:5vw;color: white">欢迎使用椒盐歌单助手</el-text>
+              <el-text style="font-size:5.5vw;color: white">欢迎使用椒盐歌单助手</el-text>
             </div>
           </transition>
           <br>
           <transition appear name="button">
             <div>
-              <el-text style="color: white;font-size: 25px">允许发送统计数据</el-text>
-              <el-switch
-                  v-model="allowStatistic"
-                  size="large"
-                  style="margin-left: 15px;padding-bottom: 10px"
-              />
+              <div style="display: flex;justify-content: center;align-items: center">
+                <el-text style="color: white;font-size: 25px">允许发送统计数据</el-text>
+                <el-switch
+                    v-model="allowStatistic"
+                    size="large"
+                    style="margin-left: 15px"
+                />
+              </div>
               <br>
               <el-button class="transition-text" size="large"
                          style="font-size:25px; margin-top: 15px; padding: 20px 30px;"

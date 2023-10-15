@@ -262,16 +262,23 @@ function showLoadingSpinner(show: boolean) {
   emit("showLoadingSpinner", show)
 }
 
+const checkList = ref(['true', 'false', 'manual'])
+
 function saveCurrentMusicList() {
   if (tableSimpleData.value.length === 0) {
     dialogVisibleSave.value = false
     makeNoti('歌单数据未加载', '请先点击 预览结果 按钮', 'error')
     return
   }
+  if (checkList.value.length === 0) {
+    makeNoti('请至少选择一种保存类型', '', 'error')
+    return
+  }
   showLoadingSpinner(true)
   const result = {};
   tableSimpleData.value.forEach((row) => {
-    result[row.index] = row.songId;
+    if (checkList.value.includes(row.autoMatched))
+      result[row.index] = row.songId;
   });
   axios({
     method: 'POST',
@@ -366,6 +373,32 @@ const makeNoti = (title: string, message: string, type: string, duration: number
   })
 }
 
+const resultData = ref('')
+const resultSongCount = ref(0)
+
+function getResultData() {
+  if (tableSimpleData.value.length === 0) {
+    dialogVisibleSave.value = false
+    makeNoti('歌单数据未加载', '请先点击 预览结果 按钮', 'error')
+    return
+  }
+  if (checkList.value.length === 0) {
+    makeNoti('请至少选择一种保存类型', '', 'error')
+    return
+  }
+  resultData.value = ''
+  const No = ref(1)
+  tableSimpleData.value.forEach((row) => {
+    if (checkList.value.includes(row.autoMatched)) {
+      resultData.value += No.value++ + '. ' + tableDetailedData.value[row.index * 3].localMusic + ' - ';
+      resultData.value += tableDetailedData.value[row.index * 3 + 1].localMusic + ' - ';
+      resultData.value += tableDetailedData.value[row.index * 3 + 2].localMusic + '\n';
+    }
+  });
+  resultSongCount.value = No.value - 1
+  resultData.value = '共 ' + resultSongCount.value + ' 首' + '\n' + resultData.value
+}
+
 // TODO
 // 移动端适配
 </script>
@@ -398,11 +431,13 @@ const makeNoti = (title: string, message: string, type: string, duration: number
           <el-radio-group v-model="mode" size="large">
             <el-tooltip
                 content="将歌曲的[歌名] [歌手] [专辑]分别进行匹配，<br>找到相似度最大的歌曲。<br>表格中将显示每个匹配项的相似度。"
+                placement="top-start"
                 raw-content>
               <el-radio-button label="分离匹配"/>
             </el-tooltip>
             <el-tooltip
                 content="将歌曲的[歌名] [歌手] [专辑]拼接成一个字符串，<br>进行匹配，找到相似度最大的歌曲。<br>表格中将显示整体匹配的相似度。"
+                placement="top-end"
                 raw-content>
               <el-radio-button label="总体匹配"/>
             </el-tooltip>
@@ -437,15 +472,15 @@ const makeNoti = (title: string, message: string, type: string, duration: number
               size="large"/>
         </el-row>
 
-        <el-button size="large" style="font-size: large; margin-top: 10px;margin-bottom: 15px; width: 10vw;"
+        <el-button size="large" style="font-size: large; margin-top: 10px;margin-bottom: 15px; width: 125px;"
                    type="primary"
                    @click="getConvertResult">
-          预览结果
+          预览歌单
         </el-button>
         <br>
-        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 8vw;"
+        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 130px;"
                    type="success"
-                   @click="dialogVisibleSave=true">
+                   @click="resultData='';resultSongCount=0;dialogVisibleSave=true;getResultData()">
           保存当前歌单
         </el-button>
         <el-dialog
@@ -455,7 +490,20 @@ const makeNoti = (title: string, message: string, type: string, duration: number
             style="border-radius: 10px"
             title="请确认"
             width="40%">
-          <el-text style="font-size: 1.2vw;margin-top: 15px">按照表格保存当前歌单的匹配结果，并进入下一个歌单？</el-text>
+          <el-text style="font-size: 1.2vw;margin-top: 15px;">按照表格保存当前歌单的匹配结果，并进入下一个歌单？</el-text>
+          <br>
+          <el-text style="font-size: 1.2vw;">要保存的类型：</el-text>
+          <el-checkbox-group v-model="checkList" @change="getResultData">
+            <el-checkbox label="true">自动匹配成功</el-checkbox>
+            <el-checkbox label="false">自动匹配失败</el-checkbox>
+            <el-checkbox label="manual">手动匹配</el-checkbox>
+          </el-checkbox-group>
+          <el-text style="font-size: 1.2vw;margin-top: 5px">转换结果预览：</el-text>
+          <el-input
+              v-model="resultData"
+              :autosize="{ minRows: 2, maxRows: 9 }"
+              readonly style="margin-top: 10px"
+              type="textarea"/>
           <br>
           <template #footer>
             <span class="dialog-footer">
@@ -466,9 +514,9 @@ const makeNoti = (title: string, message: string, type: string, duration: number
                 保存</el-button>
             </span>
           </template>
-
         </el-dialog>
-        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 8vw;"
+
+        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 130px;"
                    type="danger"
                    @click="dialogVisibleSkip=true">
           放弃当前歌单
@@ -521,7 +569,7 @@ const makeNoti = (title: string, message: string, type: string, duration: number
       <div align="center" style="width: 100%;border-radius: 10px;background-color: white;margin-top: 50px">
         <div
             style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;padding-top: 5px;padding-bottom: 5px">
-          <el-text style="font-size: 3vh;">转 换 结 果</el-text>
+          <el-text style="font-size: 3vh;">歌 单 预 览</el-text>
           <br>
           <el-text v-if="tableSimpleData.length!=0" style="font-size: 2vh;">共 {{ tableSimpleData.length }} 首，成功(自动+手动)
             {{ successNum }} 首，失败 {{ tableSimpleData.length - successNum }} 首
@@ -533,7 +581,7 @@ const makeNoti = (title: string, message: string, type: string, duration: number
             v-loading="loading"
             :data="tableSimpleData"
             :row-style="rowStyle"
-            border element-loading-text="Loading..."
+            border
             empty-text="暂无数据" fit highlight-current-row
             max-height="450" style="width: 100%; border-radius: 10px;font-size: 16px;"
             table-layout="auto"

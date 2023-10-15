@@ -4,6 +4,7 @@ import 'element-plus/dist/index.css'
 import App from './App.vue'
 import axios from "axios";
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import 'amfe-flexible'
 
 const app = createApp(App)
 

@@ -92,7 +92,7 @@ const makeNoti = (title: string, message: string, type: string) => {
               v-loading="loading"
               :data="tableData"
               :row-style="rowStyle"
-              border element-loading-text="Loading..." empty-text="暂无数据"
+              border empty-text="暂无数据"
               fit max-height="350"
               style="width: 100%; border-radius: 10px;font-size: 16px"
               table-layout="auto"
