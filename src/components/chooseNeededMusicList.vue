@@ -80,13 +80,13 @@ const makeNoti = (title: string, message: string, type: string) => {
 </script>
 
 <template>
-  <el-row style="margin-top: -10vh">
+  <el-row style="margin-top: -80px">
     <el-col style="text-align: center">
-      <el-text style="font-size:6vh;color: white;">请选择您需要转换的歌单</el-text>
+      <el-text style="font-size:45px;color: white;">请选择您需要转换的歌单</el-text>
       <br>
       <div align="center">
 
-        <div style="width: 55vw;margin-top: 25px;border-radius: 10px;">
+        <div style="width: 750px;margin-top: 25px;border-radius: 10px;">
           <el-table
               ref="table"
               v-loading="loading"
@@ -106,7 +106,8 @@ const makeNoti = (title: string, message: string, type: string) => {
 
         </div>
         <el-button id="nextStep" size="large"
-                   style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="saveSelection">下一步
+                   style="font-size:22px; margin-top: 25px; padding: 20px 50px;border-radius: 8px" type="primary"
+                   @click="saveSelection">下一步
         </el-button>
       </div>
     </el-col>
@@ -115,7 +116,7 @@ const makeNoti = (title: string, message: string, type: string) => {
 </template>
 
 <style scoped>
-::v-deep .el-table__body .el-table__row.hover-row td {
+:deep(.el-table__body) .el-table__row.hover-row td {
   background-color: rgba(110, 110, 110, 0.20) !important;
 }
 

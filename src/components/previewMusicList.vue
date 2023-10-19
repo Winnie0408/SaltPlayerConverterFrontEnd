@@ -115,18 +115,21 @@ function unfoldNotMatched() {
       tableSimple.value.toggleRowExpansion(row)
     }
   })
+  makeNoti('操作完成', '请继续其他操作', 'success', 3000)
 }
 
 function unfoldAll() {
   tableSimpleData.value.forEach(row => {
     tableSimple.value.toggleRowExpansion(row, true)
   })
+  makeNoti('操作完成', '请继续其他操作', 'success', 3000)
 }
 
 function foldAll() {
   tableSimpleData.value.forEach(row => {
     tableSimple.value.toggleRowExpansion(row, false)
   })
+  makeNoti('操作完成', '请继续其他操作', 'success', 3000)
 }
 
 const toggleRowExpansion = (row) => {
@@ -274,6 +277,10 @@ function saveCurrentMusicList() {
     makeNoti('请至少选择一种保存类型', '', 'error')
     return
   }
+  if (resultData.value === "共 0 首\n") {
+    makeNoti('没有可保存的歌曲', '', 'error')
+    return
+  }
   showLoadingSpinner(true)
   const result = {};
   tableSimpleData.value.forEach((row) => {
@@ -404,25 +411,27 @@ function getResultData() {
 </script>
 
 <template>
-  <el-row :gutter="40" style="margin-top: -10vh;width: 98%; align-items: center">
-    <el-col :span="6" style="text-align: center;">
-      <!--      <el-text style="font-size:5vh;color: white;">请预览转换结果</el-text>-->
-      <!--      <br>-->
-      <div style="width: 100%;border-radius: 10px;background-color: white;height: 100%;">
-        <div style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;">
-          <p style="height: 1px;"></p>
-          <el-text style="font-size: 2vh;">第 {{ progress + 1 }} 个，共 {{ selectedMusicListCount }} 个</el-text>
+  <el-row :gutter="40" style="margin-top: -80px;width: 90%; align-items: center;">
+    <el-col :span="7" style="text-align: center;margin-top: 20px">
+      <div style="width: 100%;border-radius: 10px;background-color: white;height: 100%; ">
+        <div
+            style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;padding-bottom: 8px;padding-top: 8px">
+          <el-text style="font-size: 18px;">第 {{ progress + 1 }} 个，共 {{ selectedMusicListCount }} 个</el-text>
           <br>
-          <el-text style="font-size: 2vh;">当前歌单名：{{ props.selectedMusicList[progress].playListName }}</el-text>
-          <br>
-          <el-text style="font-size: 2vh;">包含歌曲：{{ props.selectedMusicList[progress].songNum }}首
+          <el-text style="font-size: 20px; width: 98%" truncated>
+            当前歌单：{{ props.selectedMusicList[progress].playListName }}
           </el-text>
-          <p style="height: 1px;"></p>
+          <br>
+          <el-text style="font-size: 18px;">包含歌曲：{{ props.selectedMusicList[progress].songNum }}首
+          </el-text>
+
         </div>
-        <el-text style="font-size: 2.8vh;">转 换 控 制</el-text>
+        <div style="margin-top: 5px">
+          <el-text style="font-size: 25px;">转 换 控 制</el-text>
+        </div>
         <p></p>
         <div align="center">
-          <el-text style="font-size: 2vh;margin-top: 10px;">相似度阈值：{{ similarity }}%</el-text>
+          <el-text style="font-size: 18px;margin-top: 10px;">相似度阈值：{{ similarity }}%</el-text>
           <br>
           <el-slider v-model="similarity" :show-tooltip="false"
                      style="margin-top: 10px; width: 90%"/>
@@ -443,8 +452,10 @@ function getResultData() {
             </el-tooltip>
           </el-radio-group>
         </el-row>
-        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
-          <el-text style="margin-right: 15px; font-size: 2vh">启用括号去除</el-text>
+        <el-row align="middle" justify="center" style="margin-top: 8px;cursor:pointer;user-select: none" type="flex">
+          <el-text style="margin-right: 15px; font-size: 18px"
+                   @click="enableParenthesesRemoval=!enableParenthesesRemoval">启用括号去除
+          </el-text>
           <el-switch
               v-model="enableParenthesesRemoval"
               :active-icon="Check"
@@ -453,8 +464,10 @@ function getResultData() {
               size="large"
               style="margin-left: 17px"/>
         </el-row>
-        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
-          <el-text style="margin-right: 15px;font-size: 2vh">启用歌手名匹配</el-text>
+        <el-row align="middle" justify="center" style="margin-top: 8px;cursor:pointer;user-select: none" type="flex">
+          <el-text style="margin-right: 15px;font-size: 18px"
+                   @click="enableArtistNameMatch=!enableArtistNameMatch">启用歌手名匹配
+          </el-text>
           <el-switch
               v-model="enableArtistNameMatch"
               :active-icon="Check"
@@ -462,8 +475,10 @@ function getResultData() {
               inline-prompt
               size="large"/>
         </el-row>
-        <el-row align="middle" justify="center" style="margin-top: 10px" type="flex">
-          <el-text style="margin-right: 15px;font-size: 2vh">启用专辑名匹配</el-text>
+        <el-row align="middle" justify="center" style="margin-top: 8px;cursor:pointer;user-select: none" type="flex">
+          <el-text style="margin-right: 15px;font-size: 18px"
+                   @click="enableAlbumNameMatch=!enableAlbumNameMatch">启用专辑名匹配
+          </el-text>
           <el-switch
               v-model="enableAlbumNameMatch"
               :active-icon="Check"
@@ -472,13 +487,15 @@ function getResultData() {
               size="large"/>
         </el-row>
 
-        <el-button size="large" style="font-size: large; margin-top: 10px;margin-bottom: 15px; width: 125px;"
+        <el-button size="large"
+                   style="font-size: large; margin-top: 10px;margin-bottom: 15px; width: 150px;border-radius: 8px"
                    type="primary"
                    @click="getConvertResult">
           预览歌单
         </el-button>
         <br>
-        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 130px;"
+        <el-button size="large"
+                   style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 130px;border-radius: 8px"
                    type="success"
                    @click="resultData='';resultSongCount=0;dialogVisibleSave=true;getResultData()">
           保存当前歌单
@@ -490,15 +507,16 @@ function getResultData() {
             style="border-radius: 10px"
             title="请确认"
             width="40%">
-          <el-text style="font-size: 1.2vw;margin-top: 15px;">按照表格保存当前歌单的匹配结果，并进入下一个歌单？</el-text>
-          <br>
-          <el-text style="font-size: 1.2vw;">要保存的类型：</el-text>
-          <el-checkbox-group v-model="checkList" @change="getResultData">
-            <el-checkbox label="true">自动匹配成功</el-checkbox>
-            <el-checkbox label="false">自动匹配失败</el-checkbox>
-            <el-checkbox label="manual">手动匹配</el-checkbox>
-          </el-checkbox-group>
-          <el-text style="font-size: 1.2vw;margin-top: 5px">转换结果预览：</el-text>
+          <el-text style="font-size: 18px;margin-top: 15px;">按照表格保存当前歌单的匹配结果，并进入下一个歌单？</el-text>
+          <div style="margin-top: 8px; margin-bottom: 8px">
+            <el-text style="font-size: 15px;">要保存的类型：</el-text>
+            <el-checkbox-group v-model="checkList" @change="getResultData">
+              <el-checkbox label="true">自动匹配成功</el-checkbox>
+              <el-checkbox label="false">自动匹配失败</el-checkbox>
+              <el-checkbox label="manual">手动匹配</el-checkbox>
+            </el-checkbox-group>
+          </div>
+          <el-text style="font-size: 18px;margin-top: 5px">转换结果预览：</el-text>
           <el-input
               v-model="resultData"
               :autosize="{ minRows: 2, maxRows: 9 }"
@@ -516,7 +534,8 @@ function getResultData() {
           </template>
         </el-dialog>
 
-        <el-button size="large" style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 130px;"
+        <el-button size="large"
+                   style="font-size: large; margin-top: 5px;margin-bottom: 15px; width: 130px;border-radius: 8px"
                    type="danger"
                    @click="dialogVisibleSkip=true">
           放弃当前歌单
@@ -528,7 +547,7 @@ function getResultData() {
             style="border-radius: 10px"
             title="请确认"
             width="40%">
-          <el-text style="font-size: 1.2vw;margin-top: 15px">确认要放弃当前歌单的匹配，并进入下一个歌单？</el-text>
+          <el-text style="font-size: 18px;margin-top: 15px">确认要放弃当前歌单的匹配，并进入下一个歌单？</el-text>
           <br>
           <template #footer>
             <span class="dialog-footer">
@@ -546,9 +565,10 @@ function getResultData() {
             align-center
             append-to-body
             style="border-radius: 10px"
-            title="恭喜！"
+            title="🎉恭喜！"
             width="40%">
-          <el-text style="font-size: 1.2vw;margin-top: 15px">您已经完成了所有歌单的匹配操作！胜利就在眼前！<br>点击确定进入下载页面
+          <el-text style="font-size: 18px;margin-top: 15px">您已经完成了所有歌单的匹配操作！胜利就在眼前！<br>点击 确定
+            进入下载页面
           </el-text>
           <br>
           <template #footer>
@@ -565,13 +585,13 @@ function getResultData() {
       </div>
 
     </el-col>
-    <el-col :span="18" style="text-align: center;z-index: 1;">
+    <el-col :span="17" style="text-align: center;z-index: 1;">
       <div align="center" style="width: 100%;border-radius: 10px;background-color: white;margin-top: 50px">
         <div
-            style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;padding-top: 5px;padding-bottom: 5px">
-          <el-text style="font-size: 3vh;">歌 单 预 览</el-text>
+            style="background-color: lightgray; border-top-left-radius: 10px; border-top-right-radius: 10px;padding: 5px;">
+          <el-text style="font-size: 25px;">歌 单 预 览</el-text>
           <br>
-          <el-text v-if="tableSimpleData.length!=0" style="font-size: 2vh;">共 {{ tableSimpleData.length }} 首，成功(自动+手动)
+          <el-text v-if="tableSimpleData.length!=0" style="font-size: 16px;">共 {{ tableSimpleData.length }} 首，成功(自动+手动)
             {{ successNum }} 首，失败 {{ tableSimpleData.length - successNum }} 首
           </el-text>
         </div>
@@ -594,8 +614,8 @@ function getResultData() {
                 <div v-show="collapseTransition[props.$index]"
                      style="margin-left: 25px;margin-right: 25px">
                   <p style="font-size: 8px"></p>
-                  <el-text style="font-size: 2vh; font-weight: bold">匹配详情</el-text>
-                  <el-button icon="Delete" style="font-size: 1.8vh; float: right;" type="danger"
+                  <el-text style="font-size: 16px; font-weight: bold">匹配详情</el-text>
+                  <el-button icon="Delete" style="font-size: 15px; float: right;border-radius: 8px" type="danger"
                              @click="dialogVisibleDelete[tableSimpleData.indexOf(props.row)]=true;deleteAll=false;deleteRow=tableSimpleData.indexOf(props.row)*3">
                     放弃
                   </el-button>
@@ -608,23 +628,26 @@ function getResultData() {
                       title="确认要放弃匹配这首歌吗？"
                       width="40%">
 
-                    <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
+                    <el-text style="font-size: 15px;margin-top: 15px">当前歌曲：</el-text>
                     <br>
-                    <el-text style="font-size: 1.2vw;margin-top: 15px">歌名：{{ tableDetailedData[deleteRow].source }}
+                    <el-text style="font-size: 18px;margin-top: 15px">歌名：{{ tableDetailedData[deleteRow].source }}
                     </el-text>
                     <br>
-                    <el-text style="font-size: 1.2vw;margin-top: 15px">歌手：{{
+                    <el-text style="font-size: 18px;margin-top: 15px">歌手：{{
                         tableDetailedData[deleteRow + 1].source
                       }}
                     </el-text>
                     <br>
-                    <el-text style="font-size: 1.2vw;margin-top: 15px">专辑：{{
+                    <el-text style="font-size: 18px;margin-top: 15px">专辑：{{
                         tableDetailedData[deleteRow + 2].source
                       }}
                     </el-text>
                     <br><br>
 
-                    <el-text style="margin-right: 15px;font-size: 2vh">放弃当前歌单所有匹配失败的歌曲</el-text>
+                    <el-text style="margin-right: 15px;font-size: 16px;color: red;font-weight: bold;cursor: pointer"
+                             @click="deleteAll=!deleteAll">
+                      放弃当前歌单所有自动匹配失败的歌曲
+                    </el-text>
                     <el-switch
                         v-model="deleteAll"
                         :active-icon="Check"
@@ -644,12 +667,13 @@ function getResultData() {
 
                   </el-dialog>
 
-                  <el-button icon="Edit" style="font-size: 1.8vh; float: right; margin-right: 10px" type="primary"
+                  <el-button icon="Edit" style="font-size: 15px; float: right; margin-right: 10px;border-radius: 8px"
+                             type="primary"
                              @click="dialogVisibleModify[tableSimpleData.indexOf(props.row)] = true; modifyRow = tableSimpleData.indexOf(props.row) * 3; manualSelectMusicId = -1; queryInput=''">
                     修改
                   </el-button>
 
-                  <el-button icon="Check" style="font-size: 1.8vh; float: right;" type="success"
+                  <el-button icon="Check" style="font-size: 15px; float: right;border-radius: 8px" type="success"
                              @click="handleSame(props)">
                     相同
                   </el-button>
@@ -660,28 +684,28 @@ function getResultData() {
                       style="border-radius: 10px"
                       title="修改匹配结果"
                       width="40%">
-                    <el-text style="font-size: 1.2vw;margin-top: 15px">当前歌曲：</el-text>
+                    <el-text style="font-size: 15px;margin-top: 15px">当前歌曲：</el-text>
                     <br>
-                    <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
+                    <el-text style="font-size: 18px;margin-top: 15px;cursor: pointer"
                              @click="queryInput+=tableDetailedData[modifyRow].source">
                       歌名：{{ tableDetailedData[modifyRow].source }}
                     </el-text>
                     <br>
-                    <el-text style="font-size: 1.2vw;margin-top: 15px;cursor:pointer;"
+                    <el-text style="font-size: 18px;margin-top: 15px;cursor:pointer;"
                              @click="queryInput+=tableDetailedData[modifyRow+1].source">歌手：{{
                         tableDetailedData[modifyRow + 1].source
                       }}
                     </el-text>
                     <br>
-                    <el-text style="font-size: 1.2vw;margin-top: 15px;cursor: pointer"
+                    <el-text style="font-size: 18px;margin-top: 15px;cursor: pointer"
                              @click="queryInput+=tableDetailedData[modifyRow+2].source">专辑：{{
                         tableDetailedData[modifyRow + 2].source
                       }}
                     </el-text>
-                    <br>
-                    <el-text style="font-size: 1vw;margin-top: 15px">Tips：点击文字可直接将其填入搜索框
-                    </el-text>
-                    <br>
+
+                    <div style="margin-bottom: 8px;margin-top: 8px">
+                      <el-text style="font-size: 15px;">Tips：点击上方文字可直接将其填入搜索框</el-text>
+                    </div>
                     <el-autocomplete
                         v-model="queryInput"
                         :debounce=500
@@ -742,20 +766,47 @@ function getResultData() {
           </el-table-column>
           <el-table-column v-if="false" label="歌曲ID" prop="songId"></el-table-column>
         </el-table>
-        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
-                   type="info"
-                   @click="unfoldAll">展开所有项
-        </el-button>
-        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
-                   type="info"
-                   @click="foldAll">收起所有项
-        </el-button>
-        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;margin-right: 10px"
-                   type="info"
-                   @click="unfoldNotMatched">展开所有匹配失败的项
-        </el-button>
-        |
-        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px" type="primary"
+        <el-popconfirm
+            cancel-button-text="取消"
+            confirm-button-text="确定"
+            title="该操作可能导致页面卡顿，是否继续？（请等待完成通知弹出后，再继续操作）"
+            width="300px"
+            @confirm="unfoldAll">
+          <template #reference>
+            <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;border-radius: 8px"
+                       type="info">展开所有项
+            </el-button>
+          </template>
+        </el-popconfirm>
+
+        <el-popconfirm
+            cancel-button-text="取消"
+            confirm-button-text="确定"
+            title="该操作可能导致页面卡顿，是否继续？（请等待完成通知弹出后，再继续操作）"
+            width="300px"
+            @confirm="foldAll">
+          <template #reference>
+            <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;border-radius: 8px"
+                       type="info">收起所有项
+            </el-button>
+          </template>
+        </el-popconfirm>
+
+        <el-popconfirm
+            cancel-button-text="取消"
+            confirm-button-text="确定"
+            title="该操作可能导致页面卡顿，是否继续？（请等待完成通知弹出后，再继续操作）"
+            width="300px"
+            @confirm="unfoldNotMatched">
+          <template #reference>
+            <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;border-radius: 8px"
+                       type="info">展开所有匹配失败的项
+            </el-button>
+          </template>
+        </el-popconfirm>
+
+        <el-button size="large" style="font-size: 16px;margin-top: 15px;margin-bottom: 15px;border-radius: 8px"
+                   type="primary"
                    @click="jumpToNextFailItem">跳转到第一个匹配失败的项
         </el-button>
       </div>
@@ -764,16 +815,16 @@ function getResultData() {
 </template>
 
 <style scoped>
-::v-deep .el-table .el-table__expanded-cell {
+:deep(.el-table) .el-table__expanded-cell {
   padding: 0;
 //background-color: rgba(110, 110, 110, 0.20) !important;
 }
 
-::v-deep .el-table__body tr.current-row > td {
+:deep(.el-table__body) tr.current-row > td {
   background: rgba(110, 110, 110, 0.20) !important;
 }
 
-::v-deep .el-table__expand-icon {
+:deep(.el-table__expand-icon) {
   display: none !important;
 }
 

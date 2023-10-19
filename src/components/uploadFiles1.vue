@@ -7,7 +7,7 @@ import {UploadFilled} from "@element-plus/icons-vue";
 const upload = ref<UploadInstance>()
 const handleExceed: UploadProps['onExceed'] = (files) => {
   upload.value!.clearFiles()
-  makeNoti('文件数量超出限制', '将替换之前上传的文件', 'info')
+  makeNoti('文件数量超出限制', '将替换之前上传的文件', 'info', 3000)
   success.value = false
   const file = files[0] as UploadRawFile
   file.uid = genFileId()
@@ -75,24 +75,24 @@ function showLoadingSpinner(show: boolean) {
   emit("showLoadingSpinner", show)
 }
 
-const makeNoti = (title: string, message: string, type: string) => {
+const makeNoti = (title: string, message: string, type: string, duration: number = 5000) => {
   ElNotification({
     title: title,
     message: message,
     type: type + '',
     customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
-    duration: 5000,
+    duration: duration,
   })
 }
 </script>
 
 <template>
-  <el-row style="margin-top: -10vh">
+  <el-row style="margin-top: -80px">
     <el-col>
       <div style="margin-top: 25px;text-align: center">
-        <el-text style="font-size:6vh;color: white;">请上传我们所需要的文件</el-text>
+        <el-text style="font-size:45px;color: white;">请上传我们所需要的文件</el-text>
         <p style="margin-top: 2px"></p>
-        <el-text style="font-size:3vh;color: white;">歌曲列表：本地音乐导出.txt</el-text>
+        <el-text style="font-size:25px;color: white;">歌曲列表：本地音乐导出.txt</el-text>
       </div>
       <div align="center">
         <el-upload
@@ -114,10 +114,12 @@ const makeNoti = (title: string, message: string, type: string) => {
         </el-upload>
         <transition mode="out-in" name="button-exchange">
           <el-button v-if="!success" id="upload" key="1" size="large"
-                     style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="submitUpload">上传
+                     style="font-size:22px; margin-top: 25px; padding: 20px 50px;border-radius: 8px" type="primary"
+                     @click="submitUpload">上传
           </el-button>
           <el-button v-else id="nextStep" key="2" size="large"
-                     style="font-size: large; margin-top: 25px; width: 10vh;" type="primary" @click="next()">下一步
+                     style="font-size:22px; margin-top: 25px; padding: 20px 50px;border-radius: 8px" type="primary"
+                     @click="next()">下一步
           </el-button>
         </transition>
       </div>

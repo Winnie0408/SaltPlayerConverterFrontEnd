@@ -123,13 +123,13 @@ const makeNoti = (title: string, message: string, type: string) => {
 </script>
 
 <template>
-  <el-row style="margin-top: -10vh">
+  <el-row style="margin-top: -80px">
     <el-col>
-      <el-text style="font-size:6vh;color: white;">请选择歌单来源</el-text>
+      <el-text style="font-size:45px;color: white;">请选择歌单来源</el-text>
       <br>
       <div align="center">
         <el-select v-model="value" clearable placeholder="请选择" size="large"
-                   style="margin-top: 25px; width: 20vh;" @change="setBackgroundColor()"
+                   style="margin-top: 25px; width: 180px;" @change="setBackgroundColor()"
                    @clear="resetBackgroundColor()">
           <el-option
               v-for="item in options"
@@ -138,8 +138,8 @@ const makeNoti = (title: string, message: string, type: string) => {
               :value="item.value"/>
         </el-select>
         <br>
-        <el-button size="large" style="font-size: large; margin-top: 25px; width: 10vh;" type="primary"
-                   @click="nextStep()">下一步
+        <el-button size="large" style="font-size:22px; margin-top: 25px; padding: 20px 50px;border-radius: 8px"
+                   type="primary" @click="nextStep()">下一步
         </el-button>
       </div>
     </el-col>

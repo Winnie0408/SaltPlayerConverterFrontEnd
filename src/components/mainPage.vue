@@ -2,7 +2,7 @@
   <div @transitionend="loadAnimation">
     <el-container class="cover-container">
       <div v-loading="loading" style="position: fixed; right: 65px;top: 35px;z-index: 99"/>
-      <el-header style="background-color: white;height: 80px;opacity: 0.7">
+      <el-header style="background-color: white;height: 80px;opacity: 0.65">
         <el-steps :active="active" align-center finish-status="success" style="margin-top: 15px">
           <el-step title="选择歌单来源"/>
           <el-step title="上传所需文件①"/>
@@ -216,7 +216,7 @@ html, body {
 
 @keyframes slide-in {
   from {
-    transform: translateX(10%);
+    transform: translateX(6%);
     opacity: 0;
   }
   to {
@@ -231,14 +231,14 @@ html, body {
     opacity: 1;
   }
   to {
-    transform: translateX(-10%);
+    transform: translateX(-6%);
     opacity: 0;
   }
 }
 
 @keyframes slide-in-reverse {
   from {
-    transform: translateX(-10%);
+    transform: translateX(-6%);
     opacity: 0;
   }
   to {
@@ -253,7 +253,7 @@ html, body {
     opacity: 1;
   }
   to {
-    transform: translateX(10%);
+    transform: translateX(6%);
     opacity: 0;
   }
 }
