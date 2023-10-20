@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import {ElCollapseTransition, ElNotification} from 'element-plus'
 import {nextTick, onMounted, ref} from "vue";
-import {Check, Close} from '@element-plus/icons-vue'
+import {Check, Close, QuestionFilled} from '@element-plus/icons-vue'
 import axios from "axios";
 
 const props = defineProps({
@@ -428,6 +428,14 @@ function getResultData() {
         </div>
         <div style="margin-top: 5px">
           <el-text style="font-size: 25px;">转 换 控 制</el-text>
+          <el-tooltip v-show="props.source==='KugouMusic'">
+            <template #content>
+              由于酷狗音乐自身原因，<br>非【我喜欢】歌单中歌曲的专辑信息未保存到数据库中，<br>建议关闭【专辑名称匹配】功能，以提升自动匹配成功率。<br>（禁用后，专辑名称的相似度将始终显示为100%）
+            </template>
+            <el-icon color="#A0A0A0" size="20" style="position: relative;left: 10px">
+              <QuestionFilled/>
+            </el-icon>
+          </el-tooltip>
         </div>
         <p></p>
         <div align="center">
