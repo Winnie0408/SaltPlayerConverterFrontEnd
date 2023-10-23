@@ -10,7 +10,7 @@ const app = createApp(App)
 
 app.use(ElementPlus)
 app.mount('#app')
-axios.defaults.baseURL = 'https://dns.hwinzniej.top:46000/converter'
+axios.defaults.baseURL = 'https://saltconv.hwinzniej.top:46000/converter'
 axios.defaults.withCredentials = true
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
