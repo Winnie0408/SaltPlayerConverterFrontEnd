@@ -13,22 +13,24 @@ function handleRowClick(row, column, event) {
 }
 
 function getTableData() {
-  axios({
-    method: 'GET',
-    url: '/databaseSummary'
-  }).then(backEnd => {
-    for (const id in backEnd.data.playListInfo) {
-      tableData.value.push({
-        playListId: id,
-        playListName: backEnd.data.playListInfo[id][0],
-        songNum: backEnd.data.playListInfo[id][1]
-      })
-    }
-    loading.value = false
-  }).catch(err => {
-    makeNoti('获取歌单信息失败，请重试', '错误详情：' + err.response.data.msg, 'error')
-    loading.value = false
-  })
+  setTimeout(() => {
+    axios({
+      method: 'GET',
+      url: '/databaseSummary'
+    }).then(backEnd => {
+      for (const id in backEnd.data.playListInfo) {
+        tableData.value.push({
+          playListId: id,
+          playListName: backEnd.data.playListInfo[id][0],
+          songNum: backEnd.data.playListInfo[id][1]
+        })
+      }
+      loading.value = false
+    }).catch(err => {
+      makeNoti('获取歌单信息失败，请重试', '错误详情：' + err.response.data.msg, 'error')
+      loading.value = false
+    })
+  }, 750)
 }
 
 onMounted(() => {

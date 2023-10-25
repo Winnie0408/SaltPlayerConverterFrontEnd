@@ -28,9 +28,12 @@ const message = ref('请点击按钮，下载转换结果')
 
 async function downloadAll() {
   showLoadingSpinner(true)
+  const axiosUsed = ref(false)
   await axios.get(axios.getUri() + "/downloadAll", {
     responseType: 'blob',
+    timeout: 5000,
   }).then(backEnd => {
+    axiosUsed.value = true
     showLoadingSpinner(false)
     makeNoti('成功发起下载请求', '', 'success')
     next()
@@ -49,6 +52,7 @@ async function downloadAll() {
       document.body.removeChild(link);
     })
   }).catch(err => {
+    axiosUsed.value = true
     showLoadingSpinner(false)
     switch (err.response.status) {
       case 403:
@@ -61,6 +65,15 @@ async function downloadAll() {
         makeNoti('下载失败', '', 'error')
     }
   });
+  if (axiosUsed.value === false) {
+    makeNoti('似乎下载请求已被第三方工具接管', '若未能成功下载，请<a href=' + axios.getUri() + '/downloadAll' + '>点击这里</a>', 'info', 10000)
+    showLoadingSpinner(false)
+    next()
+    showDownload.value = false
+    title.value = "🎉 恭喜！您已完成所有操作"
+    message.value = ""
+    showConfetti()
+  }
 }
 
 const deleted = ref(false)
@@ -82,13 +95,14 @@ function deleteAll() {
   })
 }
 
-const makeNoti = (title: string, message: string, type: string) => {
+const makeNoti = (title: string, message: string, type: string, duration: number = 5000) => {
   ElNotification({
     title: title,
+    dangerouslyUseHTMLString: true,
     message: message,
     type: type + '',
     customClass: 'notification' + type.slice(0, 1).toUpperCase() + type.slice(1).toLowerCase(),
-    duration: 5000,
+    duration: duration,
   })
 }
 
