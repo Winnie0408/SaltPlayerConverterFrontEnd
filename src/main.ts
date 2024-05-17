@@ -10,7 +10,7 @@ const app = createApp(App)
 
 app.use(ElementPlus)
 app.mount('#app')
-axios.defaults.baseURL = 'https://saltconv.hwinzniej.top:46000/converter'
+axios.defaults.baseURL = 'https://saltconv.hwinzniej.top:8443/converter'
 // axios.defaults.baseURL = 'http://localhost:8082/converter'
 axios.defaults.withCredentials = true
 

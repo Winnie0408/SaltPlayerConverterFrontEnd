@@ -11,19 +11,19 @@
           </transition>
           <transition appear name="button">
             <div>
-              <div
-                  style="display: flex;justify-content: center;align-items: center;margin-top: 20px;cursor: pointer;user-select: none">
-                <el-text style="color: white;font-size: 20px" @click="allowStatistic=!allowStatistic">允许发送统计数据
-                </el-text>
-                <el-switch
-                    v-model="allowStatistic"
-                    :active-icon="Check"
-                    :inactive-icon="Close"
-                    inline-prompt
-                    size="large"
-                    style="margin-left: 15px"
-                />
-              </div>
+<!--              <div-->
+<!--                  style="display: flex;justify-content: center;align-items: center;margin-top: 20px;cursor: pointer;user-select: none">-->
+<!--                <el-text style="color: white;font-size: 20px" @click="allowStatistic=!allowStatistic">允许发送统计数据-->
+<!--                </el-text>-->
+<!--                <el-switch-->
+<!--                    v-model="allowStatistic"-->
+<!--                    :active-icon="Check"-->
+<!--                    :inactive-icon="Close"-->
+<!--                    inline-prompt-->
+<!--                    size="large"-->
+<!--                    style="margin-left: 15px"-->
+<!--                />-->
+<!--              </div>-->
               <el-button class="transition-text" size="large"
                          style="font-size:22px; margin-top: 20px; padding: 20px 50px;border-radius: 8px"
                          type="primary"
@@ -38,7 +38,7 @@
     <transition appear name="footer">
       <el-footer class="cover-footer">
         <el-row class="cover-row">
-          <el-col :span="24" class="cover-copy"><p style="font-size: 16px">© 2023 HWinZnieJ All rights reserved.</p>
+          <el-col :span="24" class="cover-copy"><p style="font-size: 16px">© 2023-2024 HWinZnieJ All rights reserved.</p>
           </el-col>
         </el-row>
       </el-footer>
@@ -165,7 +165,6 @@ html, body {
 import {ElNotification} from 'element-plus'
 import {ref} from 'vue'
 import axios from "axios";
-import {Check, Close} from "@element-plus/icons-vue";
 
 const emit = defineEmits(["changePage", "showLoadingSpinner"]);
 
@@ -174,7 +173,7 @@ function changePage() {
 }
 
 const loading = ref(false)
-const allowStatistic = ref(true)
+const allowStatistic = ref(false)
 
 function testServer() {
   loading.value = true
